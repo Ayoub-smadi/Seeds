@@ -47,9 +47,6 @@ export function Navbar() {
             <Link href="/products" className={cn("text-sm font-medium hover:text-primary transition-colors", location === '/products' ? 'text-primary' : 'text-muted-foreground')}>
               {t('shop')}
             </Link>
-            <Link href="/categories" className={cn("text-sm font-medium hover:text-primary transition-colors", location === '/categories' ? 'text-primary' : 'text-muted-foreground')}>
-              {t('categories')}
-            </Link>
           </nav>
 
           {/* Icons / Actions */}
