@@ -1,0 +1,203 @@
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useTranslation } from "@/lib/i18n";
+import { useCartStore } from "@/lib/store";
+import { formatPrice } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useCreateOrder, useGetShippingZones } from "@workspace/api-client-react";
+import { CreditCard, Banknote, MapPin, Truck } from "lucide-react";
+
+// Mock validation schema matching backend schema structure
+const checkoutSchema = z.object({
+  shippingAddress: z.object({
+    name: z.string().min(2),
+    phone: z.string().min(8),
+    city: z.string().min(2),
+    area: z.string().optional(),
+    street: z.string().optional(),
+  }),
+  shippingZoneId: z.string().min(1),
+  paymentMethod: z.enum(['stripe', 'cash_on_delivery']),
+});
+
+type CheckoutForm = z.infer<typeof checkoutSchema>;
+
+export default function Checkout() {
+  const { t, lang } = useTranslation();
+  const [_, setLocation] = useLocation();
+  const { items, getTotal, clearCart } = useCartStore();
+  
+  const { data: shippingZones } = useGetShippingZones();
+  const { mutate: createOrder, isPending } = useCreateOrder({
+    mutation: {
+      onSuccess: () => {
+        clearCart();
+        // Ideally redirect to success page or stripe checkout URL if applicable
+        alert(t('success_order'));
+        setLocation("/orders");
+      },
+      onError: (err) => {
+        alert(err.message || 'Error placing order');
+      }
+    }
+  });
+
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<CheckoutForm>({
+    resolver: zodResolver(checkoutSchema),
+    defaultValues: {
+      paymentMethod: 'cash_on_delivery'
+    }
+  });
+
+  const selectedZoneId = watch('shippingZoneId');
+  const selectedZone = shippingZones?.find(z => z.id === selectedZoneId);
+  const shippingCost = selectedZone?.price || 0;
+  const finalTotal = getTotal() + shippingCost;
+
+  if (items.length === 0) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center">
+        <h2 className="text-2xl font-bold mb-4">{t('empty_cart')}</h2>
+        <Button onClick={() => setLocation("/products")}>{t('continue_shopping')}</Button>
+      </div>
+    );
+  }
+
+  const onSubmit = (data: CheckoutForm) => {
+    // For a real app, if paymentMethod is 'stripe', we'd create intent first
+    // For this prototype, we'll just hit createOrder
+    createOrder({ data });
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <h1 className="text-4xl font-display font-bold mb-12">{t('checkout')}</h1>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div className="lg:col-span-7">
+          <form id="checkout-form" onSubmit={handleSubmit(onSubmit)} className="space-y-10">
+            
+            {/* Shipping Address */}
+            <section className="bg-card p-8 rounded-3xl border border-border shadow-sm">
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <MapPin className="text-primary w-6 h-6" /> {t('shipping_details')}
+              </h2>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{t('name')}</label>
+                  <input {...register("shippingAddress.name")} className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{t('phone')}</label>
+                  <input {...register("shippingAddress.phone")} className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">City</label>
+                  <input {...register("shippingAddress.city")} className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Street</label>
+                  <input {...register("shippingAddress.street")} className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0" />
+                </div>
+              </div>
+            </section>
+
+            {/* Shipping Zone */}
+            <section className="bg-card p-8 rounded-3xl border border-border shadow-sm">
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <Truck className="text-primary w-6 h-6" /> Shipping Method
+              </h2>
+              <div className="space-y-4">
+                {shippingZones?.map(zone => (
+                  <label key={zone.id} className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${selectedZoneId === zone.id ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                    <div className="flex items-center gap-3">
+                      <input type="radio" value={zone.id} {...register("shippingZoneId")} className="w-5 h-5 text-primary" />
+                      <span className="font-medium">{lang === 'ar' ? zone.nameAr : zone.nameEn}</span>
+                    </div>
+                    <span className="font-bold">{formatPrice(zone.price, 'SAR', lang)}</span>
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            {/* Payment Method */}
+            <section className="bg-card p-8 rounded-3xl border border-border shadow-sm">
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <CreditCard className="text-primary w-6 h-6" /> {t('payment_method')}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label className={`flex flex-col p-6 border-2 rounded-xl cursor-pointer transition-all ${watch('paymentMethod') === 'cash_on_delivery' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                  <div className="flex justify-between items-center mb-4">
+                    <Banknote className="w-8 h-8 text-primary" />
+                    <input type="radio" value="cash_on_delivery" {...register("paymentMethod")} className="w-5 h-5 text-primary" />
+                  </div>
+                  <span className="font-bold text-lg">{t('cash_on_delivery')}</span>
+                </label>
+                
+                <label className={`flex flex-col p-6 border-2 rounded-xl cursor-pointer transition-all ${watch('paymentMethod') === 'stripe' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                  <div className="flex justify-between items-center mb-4">
+                    <CreditCard className="w-8 h-8 text-primary" />
+                    <input type="radio" value="stripe" {...register("paymentMethod")} className="w-5 h-5 text-primary" />
+                  </div>
+                  <span className="font-bold text-lg">{t('credit_card')}</span>
+                </label>
+              </div>
+            </section>
+          </form>
+        </div>
+
+        {/* Order Summary */}
+        <div className="lg:col-span-5">
+          <div className="sticky top-28 bg-card p-8 rounded-3xl border border-border shadow-xl">
+            <h3 className="text-2xl font-bold mb-6">Order Summary</h3>
+            
+            <div className="space-y-4 mb-6">
+              {items.map(item => (
+                <div key={item.product.id} className="flex gap-4">
+                  <div className="w-16 h-16 rounded-lg bg-muted overflow-hidden flex-shrink-0">
+                    <img src={item.product.images?.[0] || ""} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 text-sm">
+                    <h4 className="font-medium line-clamp-1">{lang === 'ar' ? item.product.nameAr : item.product.nameEn}</h4>
+                    <p className="text-muted-foreground">Qty: {item.quantity}</p>
+                    <p className="font-bold text-primary mt-1">
+                      {formatPrice((item.product.salePrice || item.product.price) * item.quantity, 'SAR', lang)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="border-t border-border pt-6 space-y-3">
+              <div className="flex justify-between text-muted-foreground">
+                <span>{t('subtotal')}</span>
+                <span>{formatPrice(getTotal(), 'SAR', lang)}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>Shipping</span>
+                <span>{formatPrice(shippingCost, 'SAR', lang)}</span>
+              </div>
+              <div className="flex justify-between text-2xl font-bold pt-4 border-t border-border mt-4">
+                <span>Total</span>
+                <span className="text-primary">{formatPrice(finalTotal, 'SAR', lang)}</span>
+              </div>
+            </div>
+
+            <Button 
+              type="submit" 
+              form="checkout-form"
+              disabled={isPending}
+              className="w-full h-14 text-lg rounded-xl mt-8 shadow-lg shadow-primary/25"
+            >
+              {isPending ? "Processing..." : t('order_now')}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

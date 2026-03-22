@@ -1,0 +1,85 @@
+Build a full-stack premium e-commerce website called "بذور" (Seeds Store) with advanced features including real payment integration and SMS notifications for Jordan.
+
+🔹 General:
+- Arabic & English (full translation toggle i18n)
+- Dark/Light mode
+- Responsive modern UI (premium, Shopify-like)
+- Nature-inspired green design 🌱
+
+🔹 Roles:
+- Admin (dashboard)
+- Users (customers)
+
+🔹 Authentication:
+- Secure login/signup (JWT or sessions)
+
+🔹 Admin Dashboard:
+- Sidebar (Products, Categories, Orders, Users, Shipping, Offers, Settings)
+- Full CRUD for:
+  - Products
+  - Categories
+  - Orders
+- Upload product image (file upload, NOT URL)
+- Bulk upload via Excel (Name, Description, Price, Quantity, Image)
+- Add shipping مناطق داخل الأردن + أسعار
+- Offers system (discounts + sale page)
+- Full control of texts + footer links
+
+🔹 Store Features:
+- Homepage (featured + offers + categories)
+- Product page (filters + search)
+- Product details (gallery + description)
+- Cart & checkout (modern UX)
+- Order tracking
+
+🔹 💳 Payment Integration:
+Integrate real payment gateways suitable for Jordan:
+- Stripe (for international cards)
+- OR local gateways like:
+  - HyperPay
+  - MyFatoorah
+
+Features:
+- Secure checkout
+- Save transaction ID
+- Payment status (Paid / Failed / Pending)
+- Webhook to confirm payment automatically
+
+🔹 📱 SMS Integration (Jordan):
+Integrate real SMS API:
+- Use providers like:
+  - Unifonic
+  - Twilio (if supported)
+  - Local Jordan SMS gateway
+
+Features:
+- Send SMS when:
+  - Order confirmed
+  - Order shipped
+- Message example:
+  "طلبك من متجر بذور تم شحنه 🌱 رقم الطلب: {{orderId}}"
+
+🔹 Technical Stack:
+- Frontend: React + Tailwind
+- Backend: Node.js + Express
+- Database: MongoDB
+- File upload: Multer + Cloudinary
+
+🔹 Extra:
+- Search
+- Filters
+- Smooth animations
+- Loading UI
+- Error handling
+
+🔹 Security:
+- Validate inputs
+- Protect admin routes
+- Secure payment handling
+
+🔹 Deliver:
+- Fully working project
+- Clear setup instructions
+- Environment variables for:
+  - Payment API keys
+  - SMS API keys

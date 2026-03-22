@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "بذور Seeds Store"
+version = "1.0.0"
+id = "artifacts/bazour-store"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21244
+
+[services.development]
+run = "pnpm --filter @workspace/bazour-store run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/bazour-store", "run", "build" ]
+publicDir = "artifacts/bazour-store/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21244"
+BASE_PATH = "/"

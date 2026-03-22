@@ -1,0 +1,32 @@
+packages:
+  "framer-motion": "For premium page transitions and interactive hover effects"
+  "zustand": "For lightweight global state management (cart, language toggle)"
+  "lucide-react": "For consistent, beautiful iconography"
+  "date-fns": "For elegant date formatting in orders"
+  "@hookform/resolvers": "For robust form validation with Zod"
+  "react-hook-form": "For performant checkout and auth forms"
+  "zod": "For form schema validation"
+  "clsx": "For merging tailwind classes"
+  "tailwind-merge": "For resolving tailwind conflicts"
+
+images:
+  - path: "artifacts/bazour-store/public/images/hero-bg.png"
+    description: "A stunning, cinematic shot of a lush green indoor botanical greenhouse with beautiful sunlight filtering through large leaves, premium aesthetic, dark moody greens"
+    aspect_ratio: "16:9"
+  - path: "artifacts/bazour-store/public/images/logo.png"
+    description: "A minimalist, elegant logo mark for a premium seeds and plants store. Features a delicate gold seed sprouting a deep green leaf. Transparent background, high resolution."
+    aspect_ratio: "1:1"
+  - path: "artifacts/bazour-store/public/images/category-seeds.png"
+    description: "A beautifully styled aesthetic flatlay of rare exotic plant seeds in small handmade ceramic bowls on a dark green linen background"
+    aspect_ratio: "1:1"
+  - path: "artifacts/bazour-store/public/images/category-plants.png"
+    description: "A stunning, healthy monstera deliciosa plant in a premium terracotta pot, soft dramatic lighting, neutral sage background"
+    aspect_ratio: "1:1"
+  - path: "artifacts/bazour-store/public/images/pattern-overlay.png"
+    description: "A very subtle, barely visible seamless background texture of delicate fern leaves and botanical line art in very dark green/black, elegant"
+    aspect_ratio: "16:9"
+
+notes:
+  - The app uses @workspace/api-client-react for all API interactions.
+  - The language state (ar/en) is managed globally and toggles dir="rtl" on the HTML element.
+  - Tailwind's logical properties (ms-, me-, ps-, pe-) are used for automatic RTL support.

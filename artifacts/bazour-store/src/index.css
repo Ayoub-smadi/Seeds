@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* Using Tajawal for Arabic (when dir=rtl) and Outfit for English */
+  --font-sans: 'Outfit', 'Tajawal', sans-serif;
+  --font-display: 'Outfit', 'Tajawal', sans-serif;
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card-border: hsl(var(--card-border));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-popover-border: hsl(var(--popover-border));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+}
+
+:root {
+  /* LUSH BOTANICAL LIGHT THEME */
+  --background: 120 15% 98%;
+  --foreground: 150 20% 12%;
+  
+  --card: 0 0% 100%;
+  --card-foreground: 150 20% 12%;
+  --card-border: 120 15% 92%;
+  
+  --popover: 0 0% 100%;
+  --popover-foreground: 150 20% 12%;
+  --popover-border: 120 15% 92%;
+  
+  --primary: 142 40% 25%;
+  --primary-foreground: 120 20% 98%;
+  
+  --secondary: 140 20% 90%;
+  --secondary-foreground: 142 40% 25%;
+  
+  --muted: 120 10% 94%;
+  --muted-foreground: 150 10% 45%;
+  
+  --accent: 35 70% 55%;
+  --accent-foreground: 0 0% 100%;
+  
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 0 0% 100%;
+  
+  --border: 120 15% 90%;
+  --input: 120 15% 90%;
+  --ring: 142 40% 25%;
+  
+  --radius: 0.75rem;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+  --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* LUXURY MOODY DARK BOTANICAL THEME */
+  --background: 150 30% 6%;
+  --foreground: 120 15% 94%;
+  
+  --card: 150 25% 9%;
+  --card-foreground: 120 15% 94%;
+  --card-border: 150 20% 15%;
+  
+  --popover: 150 25% 9%;
+  --popover-foreground: 120 15% 94%;
+  --popover-border: 150 20% 15%;
+  
+  --primary: 142 50% 45%;
+  --primary-foreground: 150 30% 6%;
+  
+  --secondary: 150 20% 15%;
+  --secondary-foreground: 120 15% 94%;
+  
+  --muted: 150 20% 15%;
+  --muted-foreground: 150 15% 65%;
+  
+  --accent: 35 60% 50%;
+  --accent-foreground: 0 0% 100%;
+  
+  --destructive: 0 60% 45%;
+  --destructive-foreground: 0 0% 100%;
+  
+  --border: 150 20% 15%;
+  --input: 150 20% 15%;
+  --ring: 142 50% 45%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20 selection:text-primary transition-colors duration-300;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight font-bold;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-background/70 backdrop-blur-xl border border-white/10 dark:border-white/5;
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
+  }
+  
+  .pattern-bg {
+    background-image: url('../public/images/pattern-overlay.png');
+    background-size: cover;
+    background-repeat: repeat;
+    background-blend-mode: overlay;
+  }
+}

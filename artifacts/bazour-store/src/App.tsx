@@ -1,0 +1,89 @@
+import { Switch, Route, Router as WouterRouter } from "wouter";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+// Pages
+import Home from "./pages/Home";
+import Products from "./pages/Products";
+import ProductDetail from "./pages/ProductDetail";
+import Checkout from "./pages/Checkout";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import AdminLayout from "./pages/admin/AdminLayout";
+import ProductsAdmin from "./pages/admin/ProductsAdmin";
+import OrdersAdmin from "./pages/admin/OrdersAdmin";
+import NotFound from "./pages/not-found";
+
+// Layout
+import { Navbar } from "./components/layout/Navbar";
+import { Footer } from "./components/layout/Footer";
+import { CartDrawer } from "./components/layout/CartDrawer";
+import { useAppStore } from "./lib/store";
+import { useEffect } from "react";
+
+// The query client is configured to inject auth headers automatically via orval custom fetch
+const queryClient = new QueryClient();
+
+function PublicLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Navbar />
+      <main className="flex-grow">{children}</main>
+      <Footer />
+      <CartDrawer />
+    </div>
+  );
+}
+
+function Router() {
+  return (
+    <Switch>
+      <Route path="/admin" component={() => <AdminLayout><div className="text-2xl font-bold">Welcome to Admin Dashboard</div></AdminLayout>} />
+      <Route path="/admin/products" component={() => <AdminLayout><ProductsAdmin /></AdminLayout>} />
+      <Route path="/admin/orders" component={() => <AdminLayout><OrdersAdmin /></AdminLayout>} />
+      
+      <Route path="/auth/login" component={() => <PublicLayout><Login /></PublicLayout>} />
+      <Route path="/auth/register" component={() => <PublicLayout><Register /></PublicLayout>} />
+      
+      <Route path="/" component={() => <PublicLayout><Home /></PublicLayout>} />
+      <Route path="/products" component={() => <PublicLayout><Products /></PublicLayout>} />
+      <Route path="/products/:id" component={() => <PublicLayout><ProductDetail /></PublicLayout>} />
+      <Route path="/checkout" component={() => <PublicLayout><Checkout /></PublicLayout>} />
+      
+      <Route component={() => <PublicLayout><NotFound /></PublicLayout>} />
+    </Switch>
+  );
+}
+
+function AppInit() {
+  const { lang, theme } = useAppStore();
+  
+  useEffect(() => {
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lang;
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [lang, theme]);
+
+  return null;
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AppInit />
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <Router />
+        </WouterRouter>
+        <Toaster />
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;
