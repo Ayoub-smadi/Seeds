@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { useEffect } from "react";
 import { Package, FolderTree, ShoppingCart, Users, Truck, Settings, LogOut, LayoutDashboard } from "lucide-react";
 import { useGetCurrentUser } from "@workspace/api-client-react";
 
@@ -6,11 +7,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [location, setLocation] = useLocation();
   const { data: user, isLoading } = useGetCurrentUser();
 
+  useEffect(() => {
+    if (!isLoading && (!user || user.role !== 'admin')) {
+      setLocation("/auth/login");
+    }
+  }, [user, isLoading, setLocation]);
+
   if (isLoading) return null;
-  if (!user || user.role !== 'admin') {
-    setLocation("/auth/login");
-    return null;
-  }
+  if (!user || user.role !== 'admin') return null;
 
   const menu = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
