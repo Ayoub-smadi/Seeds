@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { useTranslation } from "@/lib/i18n";
+import { BazourLogo } from "@/components/ui/BazourLogo";
 
 export function Footer() {
   const { t } = useTranslation();
@@ -9,10 +10,9 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           <div className="col-span-1 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Bazour" className="h-8 w-8 object-contain dark:invert" />
-              <span className="font-display font-bold text-xl text-primary">بذور</span>
-            </Link>
+            <div className="mb-4">
+              <BazourLogo size="sm" href="/" />
+            </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
               {t('hero_subtitle')}
             </p>

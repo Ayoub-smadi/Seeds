@@ -5,6 +5,7 @@ import { useGetCurrentUser } from "@workspace/api-client-react";
 import { useTranslation } from "@/lib/i18n";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
+import { BazourLogo } from "@/components/ui/BazourLogo";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
@@ -41,10 +42,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar */}
       <aside className="w-64 bg-card border-r border-border fixed inset-y-0 left-0 flex flex-col z-40">
         <div className="h-20 flex items-center px-6 border-b border-border">
-          <Link href="/" className="flex items-center gap-2">
-            <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Bazour" className="h-8 w-8 object-contain dark:invert" />
-            <span className="font-display font-bold text-xl text-primary">Admin</span>
-          </Link>
+          <BazourLogo size="sm" href="/" />
         </div>
 
         <nav className="flex-1 py-6 px-4 space-y-1 overflow-y-auto">

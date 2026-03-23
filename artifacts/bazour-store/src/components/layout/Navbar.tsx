@@ -1,8 +1,9 @@
 import { Link, useLocation } from "wouter";
-import { ShoppingBag, Menu, User, Search, Moon, Sun, Globe } from "lucide-react";
+import { ShoppingBag, Menu, User, Search, Moon, Sun } from "lucide-react";
 import { useAppStore, useCartStore } from "@/lib/store";
 import { useTranslation } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { BazourLogo } from "@/components/ui/BazourLogo";
 import { useGetCurrentUser } from "@workspace/api-client-react";
 
 export function Navbar() {
@@ -33,10 +34,7 @@ export function Navbar() {
 
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
-            <Link href="/" className="flex items-center gap-2">
-              <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Bazour" className="h-10 w-10 object-contain dark:invert" />
-              <span className="font-display font-bold text-2xl text-primary tracking-tight">بذور</span>
-            </Link>
+            <BazourLogo size="md" href="/" />
           </div>
 
           {/* Desktop Navigation */}
