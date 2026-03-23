@@ -5,6 +5,8 @@ import { eq, sql } from "drizzle-orm";
 import { requireAdmin, requireAuth } from "../lib/auth";
 import type { JwtPayload } from "../lib/auth";
 
+const PROTECTED_EMAILS = ["ayoub@bazour.jo"];
+
 const router = Router();
 
 router.get("/", requireAdmin, async (req, res) => {
@@ -51,6 +53,25 @@ router.put("/:id", requireAuth, async (req, res) => {
     res.json(user);
   } catch (err) {
     req.log.error({ err }, "Update user error");
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.delete("/:id", requireAdmin, async (req, res) => {
+  try {
+    const [target] = await db.select().from(usersTable).where(eq(usersTable.id, req.params["id"]!)).limit(1);
+    if (!target) {
+      res.status(404).json({ error: "Not Found" });
+      return;
+    }
+    if (target.protected || PROTECTED_EMAILS.includes(target.email)) {
+      res.status(403).json({ error: "Forbidden", message: "This account is protected and cannot be deleted." });
+      return;
+    }
+    await db.delete(usersTable).where(eq(usersTable.id, req.params["id"]!));
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "Delete user error");
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
