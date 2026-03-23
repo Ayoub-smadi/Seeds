@@ -11,8 +11,13 @@ import Checkout from "./pages/Checkout";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import ProductsAdmin from "./pages/admin/ProductsAdmin";
 import OrdersAdmin from "./pages/admin/OrdersAdmin";
+import CategoriesAdmin from "./pages/admin/CategoriesAdmin";
+import UsersAdmin from "./pages/admin/UsersAdmin";
+import ShippingAdmin from "./pages/admin/ShippingAdmin";
+import SettingsAdmin from "./pages/admin/SettingsAdmin";
 import NotFound from "./pages/not-found";
 
 // Layout
@@ -22,7 +27,6 @@ import { CartDrawer } from "./components/layout/CartDrawer";
 import { useAppStore } from "./lib/store";
 import { useEffect } from "react";
 
-// The query client is configured to inject auth headers automatically via orval custom fetch
 const queryClient = new QueryClient();
 
 function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -39,18 +43,25 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
 function Router() {
   return (
     <Switch>
-      <Route path="/admin" component={() => <AdminLayout><div className="text-2xl font-bold">Welcome to Admin Dashboard</div></AdminLayout>} />
+      {/* Admin routes */}
+      <Route path="/admin" component={() => <AdminLayout><AdminDashboard /></AdminLayout>} />
       <Route path="/admin/products" component={() => <AdminLayout><ProductsAdmin /></AdminLayout>} />
       <Route path="/admin/orders" component={() => <AdminLayout><OrdersAdmin /></AdminLayout>} />
-      
+      <Route path="/admin/categories" component={() => <AdminLayout><CategoriesAdmin /></AdminLayout>} />
+      <Route path="/admin/users" component={() => <AdminLayout><UsersAdmin /></AdminLayout>} />
+      <Route path="/admin/shipping" component={() => <AdminLayout><ShippingAdmin /></AdminLayout>} />
+      <Route path="/admin/settings" component={() => <AdminLayout><SettingsAdmin /></AdminLayout>} />
+
+      {/* Auth */}
       <Route path="/auth/login" component={() => <PublicLayout><Login /></PublicLayout>} />
       <Route path="/auth/register" component={() => <PublicLayout><Register /></PublicLayout>} />
-      
+
+      {/* Store */}
       <Route path="/" component={() => <PublicLayout><Home /></PublicLayout>} />
       <Route path="/products" component={() => <PublicLayout><Products /></PublicLayout>} />
       <Route path="/products/:id" component={() => <PublicLayout><ProductDetail /></PublicLayout>} />
       <Route path="/checkout" component={() => <PublicLayout><Checkout /></PublicLayout>} />
-      
+
       <Route component={() => <PublicLayout><NotFound /></PublicLayout>} />
     </Switch>
   );
@@ -58,7 +69,7 @@ function Router() {
 
 function AppInit() {
   const { lang, theme } = useAppStore();
-  
+
   useEffect(() => {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = lang;
