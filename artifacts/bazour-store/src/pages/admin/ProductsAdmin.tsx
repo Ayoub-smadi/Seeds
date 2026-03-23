@@ -6,6 +6,7 @@ import { Plus, Search, Edit, Trash2, Image as ImageIcon, Upload, Download, X, Fi
 import { formatPrice } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { useQueryClient } from "@tanstack/react-query";
+import { ImageUpload } from "@/components/admin/ImageUpload";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
@@ -126,7 +127,7 @@ export default function ProductsAdmin() {
     setImporting(true);
     setImportResult(null);
     try {
-      const token = localStorage.getItem("auth_token");
+      const token = localStorage.getItem("bazour_token");
       const fd = new FormData();
       fd.append("file", csvFile);
       for (const img of imageFiles) fd.append("images", img);
@@ -447,15 +448,11 @@ export default function ProductsAdmin() {
                 </select>
               </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">{t('image_url')}</label>
-              <input
-                value={modal.form.imageUrl}
-                onChange={e => setModal(m => m ? { ...m, form: { ...m.form, imageUrl: e.target.value } } : m)}
-                className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:border-primary"
-                placeholder="https://..."
-              />
-            </div>
+            <ImageUpload
+              label={lang === 'ar' ? 'صورة المنتج' : 'Product image'}
+              value={modal.form.imageUrl}
+              onChange={url => setModal(m => m ? { ...m, form: { ...m.form, imageUrl: url } } : m)}
+            />
             <div className="space-y-1">
               <label className="text-sm font-medium">{t('description_en')}</label>
               <textarea

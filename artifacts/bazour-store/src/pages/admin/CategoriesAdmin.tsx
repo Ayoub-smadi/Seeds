@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, FolderTree } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetCategoriesQueryKey } from "@workspace/api-client-react";
+import { ImageUpload } from "@/components/admin/ImageUpload";
 
 type FormData = { nameAr: string; nameEn: string; slug: string; imageUrl: string };
 const empty: FormData = { nameAr: "", nameEn: "", slug: "", imageUrl: "" };
@@ -32,6 +33,9 @@ export default function CategoriesAdmin() {
     mode: 'edit', id: cat.id,
     form: { nameAr: cat.nameAr, nameEn: cat.nameEn, slug: cat.slug || "", imageUrl: cat.imageUrl || "" }
   });
+
+  const autoSlug = (nameEn: string) =>
+    nameEn.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 
   const handleSave = () => {
     if (!modal) return;
@@ -116,21 +120,52 @@ export default function CategoriesAdmin() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setModal(null)}>
           <div className="bg-card rounded-3xl border border-border shadow-2xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
             <h2 className="text-xl font-bold">{modal.mode === 'add' ? t('add_category') : t('edit')}</h2>
-            {([
-              { key: 'nameAr', label: t('name_ar') },
-              { key: 'nameEn', label: t('name_en') },
-              { key: 'slug', label: t('slug') },
-              { key: 'imageUrl', label: t('image_url') },
-            ] as { key: keyof FormData; label: string }[]).map(({ key, label }) => (
-              <div key={key} className="space-y-1">
-                <label className="text-sm font-medium">{label}</label>
-                <input
-                  value={modal.form[key]}
-                  onChange={e => setModal(m => m ? { ...m, form: { ...m.form, [key]: e.target.value } } : m)}
-                  className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:border-primary"
-                />
-              </div>
-            ))}
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium">{t('name_ar')}</label>
+              <input
+                value={modal.form.nameAr}
+                onChange={e => setModal(m => m ? { ...m, form: { ...m.form, nameAr: e.target.value } } : m)}
+                className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:border-primary"
+                dir="rtl"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium">{t('name_en')}</label>
+              <input
+                value={modal.form.nameEn}
+                onChange={e => {
+                  const nameEn = e.target.value;
+                  setModal(m => m ? {
+                    ...m,
+                    form: {
+                      ...m.form,
+                      nameEn,
+                      slug: m.form.slug || autoSlug(nameEn),
+                    }
+                  } : m);
+                }}
+                className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:border-primary"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium">{t('slug')}</label>
+              <input
+                value={modal.form.slug}
+                onChange={e => setModal(m => m ? { ...m, form: { ...m.form, slug: e.target.value } } : m)}
+                className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:border-primary font-mono"
+                placeholder="e.g. vegetables"
+              />
+            </div>
+
+            <ImageUpload
+              label={lang === 'ar' ? 'صورة القسم' : 'Category image'}
+              value={modal.form.imageUrl}
+              onChange={url => setModal(m => m ? { ...m, form: { ...m.form, imageUrl: url } } : m)}
+            />
+
             <div className="flex gap-3 pt-2">
               <Button className="flex-1 rounded-xl" onClick={handleSave} disabled={createMut.isPending || updateMut.isPending}>
                 {t('save')}

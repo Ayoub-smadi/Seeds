@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+
 interface ImageUploadProps {
   value: string;
   onChange: (url: string) => void;
@@ -21,7 +23,7 @@ export function ImageUpload({ value, onChange, label }: ImageUploadProps) {
       const formData = new FormData();
       formData.append("file", file);
       const token = localStorage.getItem("bazour_token");
-      const res = await fetch("/api/upload/image", {
+      const res = await fetch(`${BASE}/api/upload/image`, {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
@@ -42,13 +44,13 @@ export function ImageUpload({ value, onChange, label }: ImageUploadProps) {
       {label && <label className="text-sm font-medium">{label}</label>}
       <div
         className="relative w-full h-36 rounded-xl border-2 border-dashed border-border bg-muted/30 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-all overflow-hidden"
-        onClick={() => inputRef.current?.click()}
+        onClick={() => !uploading && inputRef.current?.click()}
       >
         {value ? (
           <>
             <img src={value} alt="" className="w-full h-full object-cover absolute inset-0" />
             <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-              <span className="text-white text-sm font-medium">Change image</span>
+              <span className="text-white text-sm font-medium">تغيير الصورة / Change</span>
             </div>
             <button
               type="button"
@@ -61,14 +63,14 @@ export function ImageUpload({ value, onChange, label }: ImageUploadProps) {
         ) : uploading ? (
           <div className="flex flex-col items-center gap-2">
             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs text-muted-foreground">Uploading...</span>
+            <span className="text-xs text-muted-foreground">جاري الرفع...</span>
           </div>
         ) : (
           <>
             <ImageIcon className="w-8 h-8 text-muted-foreground/50" />
             <span className="text-xs text-muted-foreground text-center px-4">
-              Click to upload image<br />
-              <span className="text-[10px]">انقر لرفع صورة</span>
+              انقر لرفع صورة<br />
+              <span className="text-[10px] text-muted-foreground/70">JPG, PNG, WEBP — حتى 10MB</span>
             </span>
             <Upload className="w-4 h-4 text-primary/60" />
           </>
