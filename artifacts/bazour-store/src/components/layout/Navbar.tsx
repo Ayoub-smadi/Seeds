@@ -40,17 +40,17 @@ export function Navbar() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex space-x-8 rtl:space-x-reverse">
-            <Link href="/" className={cn("text-sm font-medium hover:text-primary transition-colors", location === '/' ? 'text-primary' : 'text-muted-foreground')}>
+          <nav className="hidden lg:flex items-center gap-10 rtl:flex-row-reverse">
+            <Link href="/" className={cn("text-base font-semibold hover:text-primary transition-colors px-2 py-1", location === '/' ? 'text-primary' : 'text-muted-foreground')}>
               {t('home')}
             </Link>
-            <Link href="/products" className={cn("text-sm font-medium hover:text-primary transition-colors", location === '/products' ? 'text-primary' : 'text-muted-foreground')}>
+            <Link href="/products" className={cn("text-base font-semibold hover:text-primary transition-colors px-2 py-1", location === '/products' ? 'text-primary' : 'text-muted-foreground')}>
               {t('shop')}
             </Link>
           </nav>
 
           {/* Icons / Actions */}
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-3 sm:gap-5">
             <Button variant="ghost" size="icon" className="hidden sm:flex text-muted-foreground hover:text-foreground">
               <Search className="h-5 w-5" />
             </Button>
