@@ -67,9 +67,15 @@ export default function Checkout() {
   }
 
   const onSubmit = (data: CheckoutForm) => {
-    // For a real app, if paymentMethod is 'stripe', we'd create intent first
-    // For this prototype, we'll just hit createOrder
-    createOrder({ data });
+    const cartItems = items.map(item => ({
+      productId: item.product.id,
+      productNameAr: item.product.nameAr,
+      productNameEn: item.product.nameEn,
+      productImage: item.product.images?.[0],
+      quantity: item.quantity,
+      price: item.product.salePrice || item.product.price,
+    }));
+    createOrder({ data: { ...data, cartItems } as any });
   };
 
   return (

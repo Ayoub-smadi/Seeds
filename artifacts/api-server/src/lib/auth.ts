@@ -43,3 +43,16 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     next();
   });
 }
+
+export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
+  const authHeader = req.headers["authorization"];
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    try {
+      const payload = verifyToken(authHeader.slice(7));
+      (req as Request & { user: JwtPayload }).user = payload;
+    } catch {
+      // Invalid token — treat as guest
+    }
+  }
+  next();
+}

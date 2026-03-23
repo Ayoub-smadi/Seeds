@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { ordersTable, cartItemsTable, productsTable, usersTable, shippingZonesTable, offersTable } from "@workspace/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
-import { requireAuth, requireAdmin } from "../lib/auth";
+import { requireAuth, requireAdmin, optionalAuth } from "../lib/auth";
 import type { JwtPayload } from "../lib/auth";
 import { sendOrderConfirmedSms, sendOrderShippedSms } from "../lib/sms";
 
@@ -59,36 +59,57 @@ router.get("/", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", optionalAuth, async (req, res) => {
   try {
-    const { userId } = (req as typeof req & { user: JwtPayload }).user;
-    const { shippingAddress, shippingZoneId, paymentMethod, offerCode, notes } = req.body;
+    const userId = (req as typeof req & { user?: JwtPayload }).user?.userId ?? null;
+    const { shippingAddress, shippingZoneId, paymentMethod, offerCode, notes, cartItems: bodyCartItems } = req.body;
 
-    const cartItems = await db.select({
-      cartItem: cartItemsTable,
-      product: productsTable,
-    })
-      .from(cartItemsTable)
-      .leftJoin(productsTable, eq(cartItemsTable.productId, productsTable.id))
-      .where(eq(cartItemsTable.userId, userId));
-
-    if (cartItems.length === 0) {
-      res.status(400).json({ error: "Bad Request", message: "Cart is empty" });
+    if (!shippingAddress?.name || !shippingAddress?.phone) {
+      res.status(400).json({ error: "Bad Request", message: "Shipping address with name and phone is required" });
       return;
     }
 
-    const items = cartItems.map(({ cartItem, product }) => {
-      const p = product!;
-      const price = p.onSale && p.salePrice ? parseFloat(String(p.salePrice)) : parseFloat(String(p.price));
-      return {
-        productId: p.id,
-        productNameAr: p.nameAr,
-        productNameEn: p.nameEn,
-        productImage: p.images[0] || undefined,
-        quantity: cartItem.quantity,
-        price,
-      };
-    });
+    // Use items from request body (local cart) — or fall back to DB cart for logged-in users
+    let items: Array<{ productId: string; productNameAr: string; productNameEn: string; productImage?: string; quantity: number; price: number }> = [];
+
+    if (Array.isArray(bodyCartItems) && bodyCartItems.length > 0) {
+      // Items sent from frontend local cart
+      items = bodyCartItems.map((ci: any) => ({
+        productId: ci.productId,
+        productNameAr: ci.productNameAr || "",
+        productNameEn: ci.productNameEn || "",
+        productImage: ci.productImage,
+        quantity: ci.quantity,
+        price: parseFloat(String(ci.price)) || 0,
+      }));
+    } else if (userId) {
+      // Fall back to DB cart for logged-in users
+      const dbCart = await db.select({
+        cartItem: cartItemsTable,
+        product: productsTable,
+      })
+        .from(cartItemsTable)
+        .leftJoin(productsTable, eq(cartItemsTable.productId, productsTable.id))
+        .where(eq(cartItemsTable.userId, userId));
+
+      items = dbCart.map(({ cartItem, product }) => {
+        const p = product!;
+        const price = p.onSale && p.salePrice ? parseFloat(String(p.salePrice)) : parseFloat(String(p.price));
+        return {
+          productId: p.id,
+          productNameAr: p.nameAr,
+          productNameEn: p.nameEn,
+          productImage: p.images[0] || undefined,
+          quantity: cartItem.quantity,
+          price,
+        };
+      });
+    }
+
+    if (items.length === 0) {
+      res.status(400).json({ error: "Bad Request", message: "Cart is empty" });
+      return;
+    }
 
     const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
@@ -129,7 +150,10 @@ router.post("/", requireAuth, async (req, res) => {
       notes,
     }).returning();
 
-    await db.delete(cartItemsTable).where(eq(cartItemsTable.userId, userId));
+    // Clear DB cart for logged-in users
+    if (userId) {
+      await db.delete(cartItemsTable).where(eq(cartItemsTable.userId, userId));
+    }
 
     let clientSecret: string | undefined;
     if (paymentMethod === "stripe" && process.env["STRIPE_SECRET_KEY"]) {
@@ -142,9 +166,11 @@ router.post("/", requireAuth, async (req, res) => {
       clientSecret = intent.client_secret || undefined;
     }
 
-    const user = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-    if (user[0]?.phone) {
-      await sendOrderConfirmedSms(user[0].phone, order.orderNumber);
+    if (userId) {
+      const user = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+      if (user[0]?.phone) {
+        await sendOrderConfirmedSms(user[0].phone, order.orderNumber);
+      }
     }
 
     res.status(201).json({
