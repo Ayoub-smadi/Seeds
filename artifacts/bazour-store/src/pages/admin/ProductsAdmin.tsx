@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useGetProducts, useDeleteProduct, useCreateProduct, useUpdateProduct, useGetCategories } from "@workspace/api-client-react";
 import { getGetProductsQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Edit, Trash2, Image as ImageIcon } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Image as ImageIcon, Upload, Download, X, FileText, CheckCircle, AlertCircle } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { useQueryClient } from "@tanstack/react-query";
+
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 type FormData = {
   nameAr: string; nameEn: string; descriptionAr: string; descriptionEn: string;
@@ -16,6 +18,27 @@ const emptyForm: FormData = {
   nameAr: "", nameEn: "", descriptionAr: "", descriptionEn: "",
   price: "", salePrice: "", quantity: "", categoryId: "", imageUrl: "", onSale: false,
 };
+
+const CSV_COLUMNS = [
+  "nameAr", "nameEn", "descriptionAr", "descriptionEn",
+  "price", "salePrice", "quantity", "sku", "featured", "onSale", "category", "images",
+];
+
+const CSV_EXAMPLE = `nameAr,nameEn,descriptionAr,descriptionEn,price,salePrice,quantity,sku,featured,onSale,category,images
+بذور طماطم,Tomato Seeds,بذور طماطم عضوية عالية الجودة,High quality organic tomato seeds,5.99,,100,TOM001,false,false,,tomato.jpg
+بذور فلفل,Pepper Seeds,بذور فلفل حلو للزراعة المنزلية,Sweet pepper seeds for home gardening,4.50,3.99,80,PEP001,true,true,,pepper1.jpg|pepper2.jpg`;
+
+function downloadTemplate() {
+  const blob = new Blob([CSV_EXAMPLE], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "products-template.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+type ImportResult = { imported: number; failed: number; errors: string[] } | null;
 
 export default function ProductsAdmin() {
   const { t, lang } = useTranslation();
@@ -29,10 +52,17 @@ export default function ProductsAdmin() {
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<null | { mode: 'add' | 'edit'; id?: string; form: FormData }>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<ImportResult>(null);
+  const csvRef = useRef<HTMLInputElement>(null);
+  const imgRef = useRef<HTMLInputElement>(null);
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 3500);
   };
 
   const invalidate = () => qc.invalidateQueries({ queryKey: getGetProductsQueryKey() });
@@ -91,6 +121,38 @@ export default function ProductsAdmin() {
     });
   };
 
+  const handleImport = async () => {
+    if (!csvFile) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const token = localStorage.getItem("auth_token");
+      const fd = new FormData();
+      fd.append("file", csvFile);
+      for (const img of imageFiles) fd.append("images", img);
+      const res = await fetch(`${BASE}/api/upload/bulk`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      const json = await res.json();
+      setImportResult(json);
+      if (json.imported > 0) invalidate();
+    } catch {
+      setImportResult({ imported: 0, failed: 1, errors: [lang === 'ar' ? 'فشل الاتصال بالسيرفر' : 'Failed to connect to server'] });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const resetImport = () => {
+    setCsvFile(null);
+    setImageFiles([]);
+    setImportResult(null);
+    if (csvRef.current) csvRef.current.value = "";
+    if (imgRef.current) imgRef.current.value = "";
+  };
+
   return (
     <div className="space-y-8">
       {toast && (
@@ -105,6 +167,10 @@ export default function ProductsAdmin() {
           <p className="text-muted-foreground mt-1">{lang === 'ar' ? `${data?.total ?? 0} منتج` : `${data?.total ?? 0} products`}</p>
         </div>
         <div className="flex gap-3">
+          <Button variant="outline" className="rounded-xl gap-2" onClick={() => { setImportOpen(true); resetImport(); }}>
+            <Upload className="w-4 h-4" />
+            {lang === 'ar' ? 'استيراد CSV' : 'Import CSV'}
+          </Button>
           <Button className="rounded-xl gap-2" onClick={openAdd}>
             <Plus className="w-4 h-4" /> {t('add_product')}
           </Button>
@@ -178,6 +244,175 @@ export default function ProductsAdmin() {
         </table>
       </div>
 
+      {/* ── Import Modal ── */}
+      {importOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setImportOpen(false)}>
+          <div className="bg-card rounded-3xl border border-border shadow-2xl w-full max-w-2xl p-6 space-y-5 my-8" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">{lang === 'ar' ? 'استيراد منتجات CSV' : 'Bulk Import via CSV'}</h2>
+              <button onClick={() => setImportOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Format reference */}
+            <div className="bg-muted/40 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-primary" />
+                  {lang === 'ar' ? 'تنسيق الملف (الأعمدة المطلوبة)' : 'File Format (columns)'}
+                </p>
+                <Button variant="outline" size="sm" className="rounded-xl gap-1 text-xs" onClick={downloadTemplate}>
+                  <Download className="w-3.5 h-3.5" />
+                  {lang === 'ar' ? 'تحميل مثال' : 'Download Template'}
+                </Button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="text-xs w-full border-collapse">
+                  <thead>
+                    <tr className="bg-muted rounded-lg">
+                      {CSV_COLUMNS.map(c => (
+                        <th key={c} className="px-2 py-1.5 text-left font-mono font-semibold border border-border/50 whitespace-nowrap">{c}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="px-2 py-1 border border-border/30 text-muted-foreground font-mono">بذور طماطم</td>
+                      <td className="px-2 py-1 border border-border/30 text-muted-foreground font-mono">Tomato Seeds</td>
+                      <td className="px-2 py-1 border border-border/30 text-muted-foreground font-mono">وصف...</td>
+                      <td className="px-2 py-1 border border-border/30 text-muted-foreground font-mono">Desc...</td>
+                      <td className="px-2 py-1 border border-border/30 text-muted-foreground font-mono">5.99</td>
+                      <td className="px-2 py-1 border border-border/30 text-muted-foreground font-mono">3.99</td>
+                      <td className="px-2 py-1 border border-border/30 text-muted-foreground font-mono">100</td>
+                      <td className="px-2 py-1 border border-border/30 text-muted-foreground font-mono">TOM001</td>
+                      <td className="px-2 py-1 border border-border/30 text-muted-foreground font-mono">false</td>
+                      <td className="px-2 py-1 border border-border/30 text-muted-foreground font-mono">true</td>
+                      <td className="px-2 py-1 border border-border/30 text-muted-foreground font-mono">vegetables</td>
+                      <td className="px-2 py-1 border border-border/30 text-muted-foreground font-mono">tomato.jpg</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                <li>{lang === 'ar' ? 'عمود images: ضع اسم الصورة المرفوعة (مثل: tomato.jpg) — للصور المتعددة افصل بـ |' : 'images column: put the uploaded image filename (e.g. tomato.jpg) — separate multiple with |'}</li>
+                <li>{lang === 'ar' ? 'عمود category: slug أو اسم القسم بالإنجليزي (اتركه فارغاً إذا بدون قسم)' : 'category column: category slug or English name (leave empty for no category)'}</li>
+                <li>{lang === 'ar' ? 'salePrice: اتركه فارغاً إذا لا يوجد سعر تخفيض' : 'salePrice: leave empty if no sale price'}</li>
+              </ul>
+            </div>
+
+            {/* Step 1: CSV */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">
+                {lang === 'ar' ? '١. ارفع ملف CSV' : '1. Upload CSV file'}
+              </label>
+              <div
+                className={`border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-colors ${csvFile ? 'border-primary/60 bg-primary/5' : 'border-border hover:border-primary/40'}`}
+                onClick={() => csvRef.current?.click()}
+              >
+                <input
+                  ref={csvRef}
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  className="hidden"
+                  onChange={e => { setCsvFile(e.target.files?.[0] ?? null); setImportResult(null); }}
+                />
+                {csvFile ? (
+                  <div className="flex items-center justify-center gap-2 text-sm font-medium text-primary">
+                    <FileText className="w-4 h-4" /> {csvFile.name}
+                    <button className="text-muted-foreground hover:text-destructive ml-1" onClick={e => { e.stopPropagation(); setCsvFile(null); setImportResult(null); if (csvRef.current) csvRef.current.value = ""; }}>
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {lang === 'ar' ? 'اضغط لاختيار ملف CSV أو Excel' : 'Click to select CSV or Excel file'}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Step 2: Images */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">
+                {lang === 'ar' ? '٢. ارفع الصور (اختياري)' : '2. Upload images (optional)'}
+              </label>
+              <div
+                className={`border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-colors ${imageFiles.length > 0 ? 'border-primary/60 bg-primary/5' : 'border-border hover:border-primary/40'}`}
+                onClick={() => imgRef.current?.click()}
+              >
+                <input
+                  ref={imgRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={e => { setImageFiles(Array.from(e.target.files ?? [])); setImportResult(null); }}
+                />
+                {imageFiles.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-primary">
+                      {imageFiles.length} {lang === 'ar' ? 'صورة محددة' : 'images selected'}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 justify-center">
+                      {imageFiles.map((f, i) => (
+                        <span key={i} className="text-xs bg-muted px-2 py-0.5 rounded-full font-mono">{f.name}</span>
+                      ))}
+                    </div>
+                    <button className="text-xs text-muted-foreground hover:text-destructive underline" onClick={e => { e.stopPropagation(); setImageFiles([]); if (imgRef.current) imgRef.current.value = ""; }}>
+                      {lang === 'ar' ? 'إزالة الكل' : 'Remove all'}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {lang === 'ar' ? 'اضغط لاختيار صور — الأسماء يجب تطابق ما في عمود images بالـ CSV' : 'Click to select images — filenames must match the images column in CSV'}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Result */}
+            {importResult && (
+              <div className={`rounded-2xl p-4 space-y-2 ${importResult.failed === 0 ? 'bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800' : 'bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800'}`}>
+                <div className="flex items-center gap-2 font-semibold text-sm">
+                  {importResult.failed === 0
+                    ? <CheckCircle className="w-4 h-4 text-green-600" />
+                    : <AlertCircle className="w-4 h-4 text-amber-600" />}
+                  <span>
+                    {lang === 'ar'
+                      ? `تم استيراد ${importResult.imported} منتج — فشل ${importResult.failed}`
+                      : `Imported ${importResult.imported} products — ${importResult.failed} failed`}
+                  </span>
+                </div>
+                {importResult.errors.length > 0 && (
+                  <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
+                    {importResult.errors.map((e, i) => <li key={i}>{e}</li>)}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-1">
+              <Button
+                className="flex-1 rounded-xl gap-2"
+                onClick={handleImport}
+                disabled={!csvFile || importing}
+              >
+                {importing
+                  ? (lang === 'ar' ? 'جاري الاستيراد...' : 'Importing...')
+                  : (lang === 'ar' ? 'ابدأ الاستيراد' : 'Start Import')}
+              </Button>
+              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setImportOpen(false)}>
+                {t('cancel')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Add / Edit Modal ── */}
       {modal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setModal(null)}>
           <div className="bg-card rounded-3xl border border-border shadow-2xl w-full max-w-lg p-6 space-y-4 my-8" onClick={e => e.stopPropagation()}>
