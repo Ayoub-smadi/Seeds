@@ -6,13 +6,15 @@ import { cn } from "@/lib/utils";
 
 export default function UsersAdmin() {
   const { t, lang } = useTranslation();
-  const { data: users, isLoading } = useGetUsers();
+  const { data, isLoading } = useGetUsers();
   const [search, setSearch] = useState("");
 
-  const filtered = users?.filter(u =>
+  const users = data?.users ?? [];
+
+  const filtered = users.filter(u =>
     u.name?.toLowerCase().includes(search.toLowerCase()) ||
     u.email?.toLowerCase().includes(search.toLowerCase())
-  ) ?? [];
+  );
 
   return (
     <div className="space-y-8">
@@ -20,7 +22,7 @@ export default function UsersAdmin() {
         <div>
           <h1 className="text-3xl font-bold font-display">{t('users')}</h1>
           <p className="text-muted-foreground mt-1">
-            {lang === 'ar' ? `${users?.length ?? 0} مستخدم مسجل` : `${users?.length ?? 0} registered users`}
+            {lang === 'ar' ? `${data?.total ?? 0} مستخدم مسجل` : `${data?.total ?? 0} registered users`}
           </p>
         </div>
       </div>
