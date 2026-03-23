@@ -69,7 +69,7 @@ router.get("/me", requireAuth, async (req, res) => {
       res.status(401).json({ error: "Unauthorized", message: "User not found" });
       return;
     }
-    res.json({ id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, createdAt: user.createdAt });
+    res.json({ id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, avatarUrl: user.avatarUrl, createdAt: user.createdAt });
   } catch (err) {
     req.log.error({ err }, "Get me error");
     res.status(500).json({ error: "Internal Server Error" });

@@ -62,10 +62,14 @@ export function Navbar() {
             </Button>
 
             {user ? (
-              <Link href={user.role === 'admin' ? '/admin' : '/orders'}>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-                  <User className="h-5 w-5" />
-                </Button>
+              <Link href={user.role === 'admin' ? '/admin' : '/profile'}>
+                <button className="w-9 h-9 rounded-full overflow-hidden border-2 border-primary/30 hover:border-primary transition-colors flex items-center justify-center bg-muted">
+                  {(user as any).avatarUrl ? (
+                    <img src={(user as any).avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </button>
               </Link>
             ) : (
               <Link href="/auth/login">

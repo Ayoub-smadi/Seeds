@@ -38,13 +38,13 @@ router.put("/:id", requireAuth, async (req, res) => {
       res.status(403).json({ error: "Forbidden" });
       return;
     }
-    const { name, phone } = req.body;
+    const { name, phone, avatarUrl } = req.body;
     const [user] = await db.update(usersTable)
-      .set({ name, phone, updatedAt: new Date() })
+      .set({ name, phone, avatarUrl, updatedAt: new Date() })
       .where(eq(usersTable.id, req.params["id"]!))
       .returning({
         id: usersTable.id, name: usersTable.name, email: usersTable.email,
-        phone: usersTable.phone, role: usersTable.role, createdAt: usersTable.createdAt,
+        phone: usersTable.phone, role: usersTable.role, avatarUrl: usersTable.avatarUrl, createdAt: usersTable.createdAt,
       });
     if (!user) {
       res.status(404).json({ error: "Not Found" });

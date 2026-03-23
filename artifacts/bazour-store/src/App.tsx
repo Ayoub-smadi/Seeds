@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
 import Checkout from "./pages/Checkout";
+import Profile from "./pages/Profile";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -61,6 +62,7 @@ function Router() {
       <Route path="/products" component={() => <PublicLayout><Products /></PublicLayout>} />
       <Route path="/products/:id" component={() => <PublicLayout><ProductDetail /></PublicLayout>} />
       <Route path="/checkout" component={() => <PublicLayout><Checkout /></PublicLayout>} />
+      <Route path="/profile" component={() => <PublicLayout><Profile /></PublicLayout>} />
 
       <Route component={() => <PublicLayout><NotFound /></PublicLayout>} />
     </Switch>
