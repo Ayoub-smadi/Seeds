@@ -51,7 +51,7 @@ export function Footer() {
         
         <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            {t('copyright').replace('{year}', String(year))}
+            © {year} بذور Seeds Store. جميع الحقوق محفوظة.
           </p>
         </div>
       </div>
