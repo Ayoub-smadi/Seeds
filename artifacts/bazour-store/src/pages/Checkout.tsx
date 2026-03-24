@@ -8,7 +8,7 @@ import { useCartStore } from "@/lib/store";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useCreateOrder, useGetShippingZones } from "@workspace/api-client-react";
-import { CreditCard, Banknote, MapPin, Truck } from "lucide-react";
+import { CreditCard, Banknote, MapPin, Truck, CheckCircle2 } from "lucide-react";
 
 // Mock validation schema matching backend schema structure
 const checkoutSchema = z.object({
@@ -29,15 +29,15 @@ export default function Checkout() {
   const { t, lang } = useTranslation();
   const [_, setLocation] = useLocation();
   const { items, getTotal, clearCart } = useCartStore();
+  const [orderSuccess, setOrderSuccess] = useState(false);
   
   const { data: shippingZones } = useGetShippingZones();
   const { mutate: createOrder, isPending } = useCreateOrder({
     mutation: {
       onSuccess: () => {
         clearCart();
-        // Ideally redirect to success page or stripe checkout URL if applicable
-        alert(t('success_order'));
-        setLocation("/orders");
+        setOrderSuccess(true);
+        setTimeout(() => setLocation("/"), 3000);
       },
       onError: (err) => {
         alert(err.message || 'Error placing order');
@@ -56,6 +56,23 @@ export default function Checkout() {
   const selectedZone = shippingZones?.find(z => z.id === selectedZoneId);
   const shippingCost = selectedZone?.price || 0;
   const finalTotal = getTotal() + shippingCost;
+
+  if (orderSuccess) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 text-center px-4">
+        <CheckCircle2 className="w-20 h-20 text-green-500 animate-bounce" />
+        <h2 className="text-2xl font-bold text-green-600">
+          {lang === "ar" ? "تم إرسال طلبك بنجاح! 🎉" : "Order Placed Successfully! 🎉"}
+        </h2>
+        <p className="text-muted-foreground">
+          {lang === "ar" ? "سيتم التواصل معك قريباً. جاري تحويلك للصفحة الرئيسية..." : "We'll contact you soon. Redirecting to home..."}
+        </p>
+        <Button onClick={() => setLocation("/")} variant="outline">
+          {lang === "ar" ? "الصفحة الرئيسية" : "Go to Home"}
+        </Button>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
