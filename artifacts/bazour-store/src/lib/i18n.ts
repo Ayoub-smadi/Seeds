@@ -120,6 +120,12 @@ const translations = {
     feature_germination_desc: 'We test every batch to ensure high germination rates.',
     feature_eco_desc: 'Sustainable packaging that loves the earth as much as you do.',
     featured_subtitle: 'Handpicked selections for your botanical journey.',
+    in_stock_ready: 'In stock, ready to ship',
+    quality_guaranteed: 'Quality guaranteed',
+    fast_secure_delivery: 'Fast & secure delivery',
+    newsletter: 'Newsletter',
+    newsletter_submit: 'Submit',
+    copyright: '© {year} بذور Seeds Store. All rights reserved.',
   },
   ar: {
     home: 'الرئيسية',
@@ -240,6 +246,12 @@ const translations = {
     feature_germination_desc: 'نختبر كل دفعة لضمان نسب إنبات عالية.',
     feature_eco_desc: 'تغليف مستدام يحب الأرض بقدر ما تحبها أنت.',
     featured_subtitle: 'تشكيلات مختارة بعناية لرحلتك النباتية.',
+    in_stock_ready: 'في المخزون، جاهز للشحن',
+    quality_guaranteed: 'جودة مضمونة',
+    fast_secure_delivery: 'توصيل سريع وآمن',
+    newsletter: 'النشرة الإخبارية',
+    newsletter_submit: 'إرسال',
+    copyright: '© {year} بذور Seeds Store. جميع الحقوق محفوظة.',
   }
 };
 

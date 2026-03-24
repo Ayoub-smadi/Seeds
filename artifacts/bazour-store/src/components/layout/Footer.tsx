@@ -4,6 +4,7 @@ import { BazourLogo } from "@/components/ui/BazourLogo";
 
 export function Footer() {
   const { t } = useTranslation();
+  const year = new Date().getFullYear();
 
   return (
     <footer className="bg-card border-t border-border mt-20 pt-16 pb-8">
@@ -34,7 +35,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Newsletter</h4>
+            <h4 className="font-semibold text-foreground mb-4">{t('newsletter')}</h4>
             <div className="flex gap-2">
               <input 
                 type="email" 
@@ -42,7 +43,7 @@ export function Footer() {
                 className="w-full bg-background border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               <button className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
-                Submit
+                {t('newsletter_submit')}
               </button>
             </div>
           </div>
@@ -50,7 +51,7 @@ export function Footer() {
         
         <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} بذور Seeds Store. All rights reserved.
+            {t('copyright').replace('{year}', String(year))}
           </p>
         </div>
       </div>

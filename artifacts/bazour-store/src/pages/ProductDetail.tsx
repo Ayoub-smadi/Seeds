@@ -117,15 +117,15 @@ export default function ProductDetail() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 pt-8 border-t border-border">
               <div className="flex items-center gap-3 text-muted-foreground">
                 <CheckCircle2 className="w-5 h-5 text-primary" />
-                <span>In stock, ready to ship</span>
+                <span>{t('in_stock_ready')}</span>
               </div>
               <div className="flex items-center gap-3 text-muted-foreground">
                 <ShieldCheck className="w-5 h-5 text-primary" />
-                <span>Quality guaranteed</span>
+                <span>{t('quality_guaranteed')}</span>
               </div>
               <div className="flex items-center gap-3 text-muted-foreground">
                 <Truck className="w-5 h-5 text-primary" />
-                <span>Fast & secure delivery</span>
+                <span>{t('fast_secure_delivery')}</span>
               </div>
             </div>
           </div>
