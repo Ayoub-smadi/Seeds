@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+const MAX_SIZE_MB = 20;
+const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
 interface ImageUploadProps {
   value: string;
@@ -18,6 +20,13 @@ export function ImageUpload({ value, onChange, label }: ImageUploadProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     setError(null);
+
+    if (file.size > MAX_SIZE_BYTES) {
+      setError(`حجم الملف كبير جداً، الحد الأقصى ${MAX_SIZE_MB}MB / File too large, max ${MAX_SIZE_MB}MB`);
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
+
     setUploading(true);
     try {
       const formData = new FormData();
@@ -28,7 +37,15 @@ export function ImageUpload({ value, onChange, label }: ImageUploadProps) {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       });
-      if (!res.ok) throw new Error("Upload failed");
+      if (!res.ok) {
+        let message = "فشل الرفع / Upload failed";
+        try {
+          const body = await res.json();
+          if (body?.message) message = body.message;
+        } catch {}
+        setError(message);
+        return;
+      }
       const data = await res.json();
       onChange(data.url);
     } catch {
@@ -70,7 +87,7 @@ export function ImageUpload({ value, onChange, label }: ImageUploadProps) {
             <ImageIcon className="w-8 h-8 text-muted-foreground/50" />
             <span className="text-xs text-muted-foreground text-center px-4">
               انقر لرفع صورة<br />
-              <span className="text-[10px] text-muted-foreground/70">JPG, PNG, WEBP — حتى 10MB</span>
+              <span className="text-[10px] text-muted-foreground/70">JPG, PNG, WEBP — حتى {MAX_SIZE_MB}MB</span>
             </span>
             <Upload className="w-4 h-4 text-primary/60" />
           </>

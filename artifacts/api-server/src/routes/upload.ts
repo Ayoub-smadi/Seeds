@@ -18,6 +18,19 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 const storage = multer.memoryStorage();
 const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
 
+function runUploadMiddleware(
+  middleware: ReturnType<typeof upload.single>,
+  req: import("express").Request,
+  res: import("express").Response
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    middleware(req, res, (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+}
+
 async function saveImageBuffer(buffer: Buffer, originalname: string): Promise<string> {
   const cloudinaryConfigured = process.env["CLOUDINARY_CLOUD_NAME"] && process.env["CLOUDINARY_API_KEY"];
   if (cloudinaryConfigured) {
@@ -31,8 +44,9 @@ async function saveImageBuffer(buffer: Buffer, originalname: string): Promise<st
   return `/api/uploads/${filename}`;
 }
 
-router.post("/avatar", requireAuth, upload.single("file"), async (req, res) => {
+router.post("/avatar", requireAuth, async (req, res) => {
   try {
+    await runUploadMiddleware(upload.single("file"), req, res);
     if (!req.file) {
       res.status(400).json({ error: "Bad Request", message: "No file uploaded" });
       return;
@@ -40,14 +54,19 @@ router.post("/avatar", requireAuth, upload.single("file"), async (req, res) => {
     const url = await saveImageBuffer(req.file.buffer, req.file.originalname);
     const publicId = path.basename(url);
     res.json({ url, publicId });
-  } catch (err) {
+  } catch (err: unknown) {
+    if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+      res.status(400).json({ error: "Bad Request", message: "File size exceeds the 20MB limit" });
+      return;
+    }
     req.log.error({ err }, "Upload avatar error");
     res.status(500).json({ error: "Internal Server Error", message: "Upload failed" });
   }
 });
 
-router.post("/image", requireAdmin, upload.single("file"), async (req, res) => {
+router.post("/image", requireAdmin, async (req, res) => {
   try {
+    await runUploadMiddleware(upload.single("file"), req, res);
     if (!req.file) {
       res.status(400).json({ error: "Bad Request", message: "No file uploaded" });
       return;
@@ -55,7 +74,11 @@ router.post("/image", requireAdmin, upload.single("file"), async (req, res) => {
     const url = await saveImageBuffer(req.file.buffer, req.file.originalname);
     const publicId = path.basename(url);
     res.json({ url, publicId });
-  } catch (err) {
+  } catch (err: unknown) {
+    if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+      res.status(400).json({ error: "Bad Request", message: "File size exceeds the 20MB limit" });
+      return;
+    }
     req.log.error({ err }, "Upload image error");
     res.status(500).json({ error: "Internal Server Error", message: "Upload failed" });
   }
