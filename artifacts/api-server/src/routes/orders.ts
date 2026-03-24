@@ -5,6 +5,7 @@ import { eq, desc, sql } from "drizzle-orm";
 import { requireAuth, requireAdmin, optionalAuth } from "../lib/auth";
 import type { JwtPayload } from "../lib/auth";
 import { sendOrderConfirmedSms, sendOrderShippedSms } from "../lib/sms";
+import { sendOrderConfirmationEmail } from "../lib/email";
 
 const router = Router();
 
@@ -167,9 +168,29 @@ router.post("/", optionalAuth, async (req, res) => {
     }
 
     if (userId) {
-      const user = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-      if (user[0]?.phone) {
-        await sendOrderConfirmedSms(user[0].phone, order.orderNumber);
+      const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+      if (user?.phone) {
+        await sendOrderConfirmedSms(user.phone, order.orderNumber);
+      }
+      if (user?.email) {
+        await sendOrderConfirmationEmail({
+          customerName: user.name || shippingAddress?.name || "عزيزي العميل",
+          customerEmail: user.email,
+          orderNumber: order.orderNumber,
+          items: items.map(i => ({
+            nameAr: i.productNameAr || i.productNameEn,
+            nameEn: i.productNameEn || i.productNameAr,
+            quantity: i.quantity,
+            price: i.price,
+            productImage: i.productImage,
+          })),
+          subtotal,
+          shippingCost,
+          discount,
+          total,
+          shippingAddress,
+          paymentMethod,
+        });
       }
     }
 

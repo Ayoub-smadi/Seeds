@@ -1,0 +1,205 @@
+import nodemailer from "nodemailer";
+
+const transporter = nodemailer.createTransport({
+  host: process.env["SMTP_HOST"] || "smtp.gmail.com",
+  port: parseInt(process.env["SMTP_PORT"] || "587"),
+  secure: false,
+  auth: {
+    user: process.env["SMTP_USER"],
+    pass: process.env["SMTP_PASS"],
+  },
+  tls: {
+    rejectUnauthorized: false,
+  },
+});
+
+export interface OrderEmailItem {
+  nameAr: string;
+  nameEn: string;
+  quantity: number;
+  price: number;
+  productImage?: string;
+}
+
+export interface OrderEmailData {
+  customerName: string;
+  customerEmail?: string;
+  orderNumber: string;
+  items: OrderEmailItem[];
+  subtotal: number;
+  shippingCost: number;
+  discount: number;
+  total: number;
+  shippingAddress?: {
+    name?: string;
+    address?: string;
+    city?: string;
+    phone?: string;
+  };
+  paymentMethod?: string;
+}
+
+function buildOrderConfirmationHtml(data: OrderEmailData): string {
+  const { customerName, orderNumber, items, subtotal, shippingCost, discount, total, shippingAddress, paymentMethod } = data;
+
+  const formatPrice = (amount: number) =>
+    `${amount.toFixed(3)} د.أ`;
+
+  const itemRows = items
+    .map(
+      (item) => `
+      <tr>
+        <td style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            ${item.productImage
+              ? `<img src="${item.productImage}" alt="${item.nameAr}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid #e5e5e5;" />`
+              : `<div style="width:48px;height:48px;border-radius:8px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:20px;">🌱</div>`
+            }
+            <div>
+              <div style="font-weight:600;color:#1a1a1a;">${item.nameAr}</div>
+              <div style="font-size:13px;color:#888;">${item.nameEn}</div>
+            </div>
+          </div>
+        </td>
+        <td style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0; text-align: center; color: #555;">${item.quantity}</td>
+        <td style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0; text-align: right; color: #555;">${formatPrice(item.price)}</td>
+        <td style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0; text-align: right; font-weight: 600; color: #2d6a4f;">${formatPrice(item.price * item.quantity)}</td>
+      </tr>`
+    )
+    .join("");
+
+  const paymentLabels: Record<string, string> = {
+    cash_on_delivery: "الدفع عند الاستلام",
+    stripe: "بطاقة ائتمانية",
+  };
+
+  return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تأكيد الطلب - بذور</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f6f9f6;font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;">
+
+  <div style="max-width:640px;margin:40px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#2d6a4f 0%,#40916c 100%);padding:40px 32px;text-align:center;">
+      <div style="font-size:36px;margin-bottom:8px;">🌱</div>
+      <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:-0.5px;">بذور Seeds Store</h1>
+      <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:15px;">تأكيد الطلب</p>
+    </div>
+
+    <!-- Greeting -->
+    <div style="padding:32px 32px 0;">
+      <h2 style="margin:0 0 8px;color:#1a1a1a;font-size:22px;">مرحباً ${customerName}! 👋</h2>
+      <p style="margin:0;color:#555;font-size:15px;line-height:1.6;">
+        شكراً لثقتك بمتجر بذور. تم استلام طلبك بنجاح وسيتم معالجته في أقرب وقت ممكن.
+      </p>
+    </div>
+
+    <!-- Order badge -->
+    <div style="padding:24px 32px;">
+      <div style="background:#f0f7f4;border:1px solid #d4edda;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:13px;color:#888;margin-bottom:4px;">رقم الطلب</div>
+          <div style="font-size:18px;font-weight:700;color:#2d6a4f;font-family:monospace;">${orderNumber}</div>
+        </div>
+        <div style="background:#2d6a4f;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;">
+          ✅ مؤكد
+        </div>
+      </div>
+    </div>
+
+    <!-- Products table -->
+    <div style="padding:0 32px;">
+      <h3 style="margin:0 0 16px;color:#1a1a1a;font-size:16px;font-weight:700;">المنتجات المطلوبة</h3>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #e5e5e5;border-radius:12px;overflow:hidden;">
+        <thead>
+          <tr style="background:#f8f8f8;">
+            <th style="padding:12px 16px;text-align:right;font-size:13px;color:#666;font-weight:600;border-bottom:2px solid #e5e5e5;">المنتج</th>
+            <th style="padding:12px 16px;text-align:center;font-size:13px;color:#666;font-weight:600;border-bottom:2px solid #e5e5e5;">الكمية</th>
+            <th style="padding:12px 16px;text-align:right;font-size:13px;color:#666;font-weight:600;border-bottom:2px solid #e5e5e5;">السعر</th>
+            <th style="padding:12px 16px;text-align:right;font-size:13px;color:#666;font-weight:600;border-bottom:2px solid #e5e5e5;">الإجمالي</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemRows}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Totals -->
+    <div style="padding:24px 32px;">
+      <div style="background:#fafafa;border:1px solid #e5e5e5;border-radius:12px;padding:20px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+          <span style="color:#555;">المجموع الفرعي</span>
+          <span style="color:#1a1a1a;">${formatPrice(subtotal)}</span>
+        </div>
+        ${shippingCost > 0 ? `
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+          <span style="color:#555;">رسوم الشحن</span>
+          <span style="color:#1a1a1a;">${formatPrice(shippingCost)}</span>
+        </div>` : ""}
+        ${discount > 0 ? `
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+          <span style="color:#555;">الخصم</span>
+          <span style="color:#e74c3c;">- ${formatPrice(discount)}</span>
+        </div>` : ""}
+        <div style="border-top:2px solid #e5e5e5;margin:12px 0;"></div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:17px;font-weight:700;color:#1a1a1a;">المجموع الكلي</span>
+          <span style="font-size:20px;font-weight:700;color:#2d6a4f;">${formatPrice(total)}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shipping info -->
+    ${shippingAddress ? `
+    <div style="padding:0 32px 24px;">
+      <h3 style="margin:0 0 16px;color:#1a1a1a;font-size:16px;font-weight:700;">تفاصيل الشحن</h3>
+      <div style="background:#fafafa;border:1px solid #e5e5e5;border-radius:12px;padding:20px;line-height:2;">
+        ${shippingAddress.name ? `<div><strong>الاسم:</strong> ${shippingAddress.name}</div>` : ""}
+        ${shippingAddress.address ? `<div><strong>العنوان:</strong> ${shippingAddress.address}</div>` : ""}
+        ${shippingAddress.city ? `<div><strong>المدينة:</strong> ${shippingAddress.city}</div>` : ""}
+        ${shippingAddress.phone ? `<div><strong>رقم الهاتف:</strong> ${shippingAddress.phone}</div>` : ""}
+        ${paymentMethod ? `<div><strong>طريقة الدفع:</strong> ${paymentLabels[paymentMethod] || paymentMethod}</div>` : ""}
+      </div>
+    </div>` : ""}
+
+    <!-- Footer -->
+    <div style="background:#f8f8f8;border-top:1px solid #e5e5e5;padding:24px 32px;text-align:center;">
+      <p style="margin:0 0 8px;color:#555;font-size:14px;">إذا كان لديك أي استفسار، لا تتردد في التواصل معنا</p>
+      <p style="margin:0;color:#2d6a4f;font-size:14px;font-weight:600;">seedsstorebazour@gmail.com</p>
+      <p style="margin:16px 0 0;color:#aaa;font-size:12px;">© ${new Date().getFullYear()} بذور Seeds Store. جميع الحقوق محفوظة.</p>
+    </div>
+  </div>
+
+</body>
+</html>`;
+}
+
+export async function sendOrderConfirmationEmail(data: OrderEmailData): Promise<boolean> {
+  if (!process.env["SMTP_USER"] || !process.env["SMTP_PASS"]) {
+    return false;
+  }
+
+  if (!data.customerEmail) {
+    return false;
+  }
+
+  try {
+    const fromName = process.env["SMTP_FROM_NAME"] || "بذور Seeds Store";
+    await transporter.sendMail({
+      from: `"${fromName}" <${process.env["SMTP_USER"]}>`,
+      to: data.customerEmail,
+      subject: `✅ تأكيد طلبك #${data.orderNumber} - بذور Seeds Store`,
+      html: buildOrderConfirmationHtml(data),
+    });
+    return true;
+  } catch (err) {
+    console.error("[Email] Failed to send order confirmation:", err);
+    return false;
+  }
+}
