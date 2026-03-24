@@ -1,9 +1,62 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import { ArrowRight, Leaf, ShieldCheck, Sprout } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { useGetProducts, useGetCategories } from "@workspace/api-client-react";
 import { ProductCard } from "@/components/ui/ProductCard";
+import { useEffect, useState } from "react";
+
+const HERO_SLIDES = [
+  {
+    url: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1920&q=85&fit=crop",
+    alt: "Sunlit garden",
+  },
+  {
+    url: "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=1920&q=85&fit=crop",
+    alt: "Lush green garden",
+  },
+  {
+    url: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?w=1920&q=85&fit=crop",
+    alt: "Beautiful plants",
+  },
+];
+
+function HeroCarousel() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex(i => (i + 1) % HERO_SLIDES.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <>
+      <AnimatePresence mode="sync">
+        <motion.img
+          key={index}
+          src={HERO_SLIDES[index].url}
+          alt={HERO_SLIDES[index].alt}
+          className="absolute inset-0 w-full h-full object-cover"
+          initial={{ opacity: 0, scale: 1.04 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 1.04 }}
+          transition={{ duration: 1.2, ease: "easeInOut" }}
+        />
+      </AnimatePresence>
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex gap-2">
+        {HERO_SLIDES.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setIndex(i)}
+            className={`w-2 h-2 rounded-full transition-all duration-300 ${i === index ? "bg-white w-6" : "bg-white/50 hover:bg-white/80"}`}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
 
 export default function Home() {
   const { t, lang } = useTranslation();
@@ -16,20 +69,13 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative h-[85vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-black/40 z-10" />
-        <img 
-          src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
-          alt="Botanical Greenhouse"
-          className="absolute inset-0 w-full h-full object-cover scale-105 animate-[pulse_60s_ease-in-out_infinite_alternate]"
-        />
+        <HeroCarousel />
         <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white w-full">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <span className="inline-block py-1 px-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-medium tracking-widest uppercase mb-6">
-              {lang === 'ar' ? 'مجموعة 2025' : 'Collection 2025'}
-            </span>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold mb-6 drop-shadow-lg leading-tight">
               {t('hero_title')}
             </h1>
