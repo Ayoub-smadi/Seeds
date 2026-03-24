@@ -53,7 +53,11 @@ router.post("/", requireAdmin, async (req, res) => {
       .values({ nameAr, nameEn, slug, imageUrl, parentId: parentId || null })
       .returning();
     res.status(201).json({ ...category, productCount: 0, subcategories: [] });
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.cause?.code === "23505" || err?.message?.includes("duplicate key")) {
+      res.status(400).json({ error: "slug_duplicate", message: "هذا الـ slug مستخدم مسبقاً — اختر slug مختلف" });
+      return;
+    }
     req.log.error({ err }, "Create category error");
     res.status(500).json({ error: "Internal Server Error" });
   }
@@ -71,7 +75,11 @@ router.put("/:id", requireAdmin, async (req, res) => {
       return;
     }
     res.json({ ...category, productCount: 0, subcategories: [] });
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.cause?.code === "23505" || err?.message?.includes("duplicate key")) {
+      res.status(400).json({ error: "slug_duplicate", message: "هذا الـ slug مستخدم مسبقاً — اختر slug مختلف" });
+      return;
+    }
     req.log.error({ err }, "Update category error");
     res.status(500).json({ error: "Internal Server Error" });
   }

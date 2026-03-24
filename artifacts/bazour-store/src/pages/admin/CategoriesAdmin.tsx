@@ -45,21 +45,30 @@ export default function CategoriesAdmin() {
   const autoSlug = (nameEn: string) =>
     nameEn.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 
+  const [slugError, setSlugError] = useState<string | null>(null);
+
   const handleSave = () => {
     if (!modal) return;
     const { nameAr, nameEn, slug, imageUrl, parentId } = modal.form;
     if (!nameAr || !nameEn || !slug) return;
+    setSlugError(null);
     const data = { nameAr, nameEn, slug, imageUrl, parentId: parentId || undefined };
+
+    const onError = (err: any) => {
+      const msg = err?.response?.data?.message;
+      if (msg) { setSlugError(msg); }
+      else { showToast(t('error_generic'), false); }
+    };
 
     if (modal.mode === 'add') {
       createMut.mutate({ data }, {
-        onSuccess: () => { invalidate(); setModal(null); showToast(t('created_successfully')); },
-        onError: () => showToast(t('error_generic'), false),
+        onSuccess: () => { invalidate(); setModal(null); setSlugError(null); showToast(t('created_successfully')); },
+        onError,
       });
     } else {
       updateMut.mutate({ id: modal.id!, data }, {
-        onSuccess: () => { invalidate(); setModal(null); showToast(t('updated_successfully')); },
-        onError: () => showToast(t('error_generic'), false),
+        onSuccess: () => { invalidate(); setModal(null); setSlugError(null); showToast(t('updated_successfully')); },
+        onError,
       });
     }
   };
