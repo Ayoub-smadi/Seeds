@@ -4,8 +4,10 @@ import { getGetOrdersQueryKey } from "@workspace/api-client-react";
 import { formatPrice } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { useQueryClient } from "@tanstack/react-query";
-import { Search, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
@@ -26,6 +28,8 @@ export default function OrdersAdmin() {
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
@@ -42,6 +46,26 @@ export default function OrdersAdmin() {
     });
   };
 
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      const token = localStorage.getItem("bazour_token");
+      const res = await fetch(`${BASE}/api/orders/${id}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error();
+      qc.invalidateQueries({ queryKey: getGetOrdersQueryKey() });
+      showToast(t('deleted_successfully'));
+      if (expandedId === id) setExpandedId(null);
+    } catch {
+      showToast(t('error_generic'), false);
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteId(null);
+    }
+  };
+
   const orders = data?.orders ?? [];
   const filtered = orders.filter(o =>
     o.orderNumber?.toLowerCase().includes(search.toLowerCase()) ||
@@ -53,6 +77,34 @@ export default function OrdersAdmin() {
       {toast && (
         <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-xl text-white font-medium ${toast.ok ? 'bg-green-600' : 'bg-red-600'}`}>
           {toast.msg}
+        </div>
+      )}
+
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-card rounded-2xl p-6 shadow-xl max-w-sm w-full mx-4 space-y-4">
+            <h3 className="text-lg font-bold">{lang === 'ar' ? 'تأكيد الحذف' : 'Confirm Delete'}</h3>
+            <p className="text-muted-foreground text-sm">
+              {lang === 'ar' ? 'هل أنت متأكد أنك تريد حذف هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء.' : 'Are you sure you want to delete this order? This action cannot be undone.'}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-muted transition-colors"
+              >
+                {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+              </button>
+              <button
+                onClick={() => handleDelete(confirmDeleteId)}
+                disabled={deletingId === confirmDeleteId}
+                className="px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50"
+              >
+                {deletingId === confirmDeleteId
+                  ? (lang === 'ar' ? 'جاري الحذف...' : 'Deleting...')
+                  : t('delete')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -86,13 +138,14 @@ export default function OrdersAdmin() {
               <th className="px-6 py-4 font-medium">{t('date')}</th>
               <th className="px-6 py-4 font-medium">{t('total')}</th>
               <th className="px-6 py-4 font-medium">{t('status')}</th>
+              <th className="px-6 py-4 font-medium w-12"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {isLoading ? (
-              <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</td></tr>
+              <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</td></tr>
             ) : !filtered.length ? (
-              <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">{t('no_orders')}</td></tr>
+              <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">{t('no_orders')}</td></tr>
             ) : filtered.map((order) => (
               <>
                 <tr key={order.id} className="hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}>
@@ -119,10 +172,19 @@ export default function OrdersAdmin() {
                       ))}
                     </select>
                   </td>
+                  <td className="px-4 py-4" onClick={e => e.stopPropagation()}>
+                    <button
+                      onClick={() => setConfirmDeleteId(order.id)}
+                      className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      title={t('delete')}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
                 </tr>
                 {expandedId === order.id && (
                   <tr key={`${order.id}-detail`} className="bg-muted/10">
-                    <td colSpan={6} className="px-8 py-4">
+                    <td colSpan={7} className="px-8 py-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                         <div>
                           <p className="font-bold mb-2">{lang === 'ar' ? 'عنوان الشحن' : 'Shipping Address'}</p>
@@ -135,11 +197,29 @@ export default function OrdersAdmin() {
                         </div>
                         <div>
                           <p className="font-bold mb-2">{lang === 'ar' ? 'المنتجات' : 'Items'}</p>
-                          <div className="space-y-1">
+                          <div className="space-y-3">
                             {(order.items as any[])?.map((item: any, i: number) => (
-                              <div key={i} className="flex justify-between text-muted-foreground">
-                                <span>{lang === 'ar' ? item.nameAr : item.nameEn} × {item.quantity}</span>
-                                <span className="font-medium text-foreground">{formatPrice(item.price * item.quantity, 'JOD', lang)}</span>
+                              <div key={i} className="flex items-center gap-3">
+                                {item.productImage ? (
+                                  <img
+                                    src={item.productImage}
+                                    alt={lang === 'ar' ? item.nameAr : item.nameEn}
+                                    className="w-12 h-12 rounded-lg object-cover border border-border flex-shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 rounded-lg bg-muted border border-border flex-shrink-0 flex items-center justify-center text-muted-foreground text-xs">
+                                    {lang === 'ar' ? 'لا صورة' : 'No img'}
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-foreground truncate">
+                                    {lang === 'ar' ? (item.nameAr || item.productNameAr) : (item.nameEn || item.productNameEn)}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">× {item.quantity}</p>
+                                </div>
+                                <span className="font-medium text-foreground flex-shrink-0">
+                                  {formatPrice(item.price * item.quantity, 'JOD', lang)}
+                                </span>
                               </div>
                             ))}
                           </div>

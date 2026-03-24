@@ -218,6 +218,24 @@ router.get("/:id", requireAuth, async (req, res) => {
   }
 });
 
+router.delete("/:id", requireAdmin, async (req, res) => {
+  try {
+    const [order] = await db.delete(ordersTable)
+      .where(eq(ordersTable.id, req.params["id"]!))
+      .returning();
+
+    if (!order) {
+      res.status(404).json({ error: "Not Found" });
+      return;
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "Delete order error");
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 router.put("/:id/status", requireAdmin, async (req, res) => {
   try {
     const { status } = req.body;
