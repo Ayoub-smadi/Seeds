@@ -67,7 +67,7 @@ export default function Profile() {
       const token = localStorage.getItem("bazour_token");
       const fd = new FormData();
       fd.append("file", file);
-      const uploadRes = await fetch(`${BASE}/api/upload/image`, {
+      const uploadRes = await fetch(`${BASE}/api/upload/avatar`, {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: fd,

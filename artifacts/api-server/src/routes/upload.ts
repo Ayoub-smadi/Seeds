@@ -2,7 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { requireAdmin } from "../lib/auth";
+import { requireAdmin, requireAuth } from "../lib/auth";
 import { uploadToCloudinary } from "../lib/cloudinary";
 import { db } from "@workspace/db";
 import { productsTable, categoriesTable } from "@workspace/db/schema";
@@ -30,6 +30,21 @@ async function saveImageBuffer(buffer: Buffer, originalname: string): Promise<st
   fs.writeFileSync(filepath, buffer);
   return `/api/uploads/${filename}`;
 }
+
+router.post("/avatar", requireAuth, upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: "Bad Request", message: "No file uploaded" });
+      return;
+    }
+    const url = await saveImageBuffer(req.file.buffer, req.file.originalname);
+    const publicId = path.basename(url);
+    res.json({ url, publicId });
+  } catch (err) {
+    req.log.error({ err }, "Upload avatar error");
+    res.status(500).json({ error: "Internal Server Error", message: "Upload failed" });
+  }
+});
 
 router.post("/image", requireAdmin, upload.single("file"), async (req, res) => {
   try {
