@@ -116,6 +116,10 @@ const translations = {
     no_zones: 'No zones found',
     recent_orders: 'Recent Orders',
     quick_stats: 'Quick Stats',
+    feature_organic_desc: 'Certified organic, non-GMO seeds for your garden.',
+    feature_germination_desc: 'We test every batch to ensure high germination rates.',
+    feature_eco_desc: 'Sustainable packaging that loves the earth as much as you do.',
+    featured_subtitle: 'Handpicked selections for your botanical journey.',
   },
   ar: {
     home: 'الرئيسية',
@@ -232,6 +236,10 @@ const translations = {
     no_zones: 'لا توجد مناطق',
     recent_orders: 'أحدث الطلبات',
     quick_stats: 'إحصائيات سريعة',
+    feature_organic_desc: 'بذور عضوية معتمدة وغير معدلة وراثياً لحديقتك.',
+    feature_germination_desc: 'نختبر كل دفعة لضمان نسب إنبات عالية.',
+    feature_eco_desc: 'تغليف مستدام يحب الأرض بقدر ما تحبها أنت.',
+    featured_subtitle: 'تشكيلات مختارة بعناية لرحلتك النباتية.',
   }
 };
 

@@ -53,21 +53,21 @@ export default function Home() {
                 <Sprout className="w-8 h-8" />
               </div>
               <h3 className="font-bold text-xl mb-2">{lang === 'ar' ? 'بذور عضوية 100%' : '100% Organic Seeds'}</h3>
-              <p className="text-muted-foreground">Certified organic, non-GMO seeds for your garden.</p>
+              <p className="text-muted-foreground">{t('feature_organic_desc')}</p>
             </div>
             <div className="flex flex-col items-center p-6">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4">
                 <ShieldCheck className="w-8 h-8" />
               </div>
               <h3 className="font-bold text-xl mb-2">{lang === 'ar' ? 'ضمان الإنبات' : 'Germination Guarantee'}</h3>
-              <p className="text-muted-foreground">We test every batch to ensure high germination rates.</p>
+              <p className="text-muted-foreground">{t('feature_germination_desc')}</p>
             </div>
             <div className="flex flex-col items-center p-6">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4">
                 <Leaf className="w-8 h-8" />
               </div>
               <h3 className="font-bold text-xl mb-2">{lang === 'ar' ? 'تغليف صديق للبيئة' : 'Eco-Friendly'}</h3>
-              <p className="text-muted-foreground">Sustainable packaging that loves the earth as much as you do.</p>
+              <p className="text-muted-foreground">{t('feature_eco_desc')}</p>
             </div>
           </div>
         </div>
@@ -112,7 +112,7 @@ export default function Home() {
           <div className="flex justify-between items-end mb-12">
             <div>
               <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">{t('featured')}</h2>
-              <p className="text-muted-foreground">Handpicked selections for your botanical journey.</p>
+              <p className="text-muted-foreground">{t('featured_subtitle')}</p>
             </div>
             <Link href="/products" className="hidden sm:inline-flex items-center text-primary font-semibold hover:underline">
               {t('all_products')} <ArrowRight className={cn("ms-2 w-4 h-4", lang === 'ar' && "rotate-180")} />
