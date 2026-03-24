@@ -71,7 +71,9 @@ export interface Category {
   nameEn: string;
   slug: string;
   imageUrl?: string;
+  parentId?: string;
   productCount?: number;
+  subcategories?: Category[];
 }
 
 export interface CreateCategoryRequest {
@@ -79,6 +81,7 @@ export interface CreateCategoryRequest {
   nameEn: string;
   slug: string;
   imageUrl?: string;
+  parentId?: string;
 }
 
 export interface Product {

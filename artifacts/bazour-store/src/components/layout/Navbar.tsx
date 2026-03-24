@@ -1,14 +1,87 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { ShoppingBag, Menu, User, Search, Moon, Sun, X, Home, ShoppingBag as ShopIcon, LogIn, ChevronRight } from "lucide-react";
+import { ShoppingBag, Menu, User, Search, Moon, Sun, X, Home, ShoppingBag as ShopIcon, LogIn, ChevronRight, ChevronDown } from "lucide-react";
 import { useAppStore, useCartStore } from "@/lib/store";
 import { useTranslation } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { BazourLogo } from "@/components/ui/BazourLogo";
-import { useGetCurrentUser } from "@workspace/api-client-react";
+import { useGetCurrentUser, useGetCategories } from "@workspace/api-client-react";
+import type { Category } from "@workspace/api-client-react";
 
 function cn(...classes: (string | undefined | null | false)[]) {
   return classes.filter(Boolean).join(" ");
+}
+
+function CategoryDropdown({ cat, lang, onNavigate }: { cat: Category; lang: string; onNavigate: (href: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const hasSubs = (cat.subcategories?.length ?? 0) > 0;
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const name = lang === "ar" ? cat.nameAr : cat.nameEn;
+
+  if (!hasSubs) {
+    return (
+      <button
+        onClick={() => onNavigate(`/products?category=${cat.slug}`)}
+        className="text-base font-semibold text-muted-foreground hover:text-primary transition-colors px-2 py-1"
+      >
+        {name}
+      </button>
+    );
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onClick={() => setOpen(v => !v)}
+        className={cn(
+          "flex items-center gap-1 text-base font-semibold transition-colors px-2 py-1",
+          open ? "text-primary" : "text-muted-foreground hover:text-primary"
+        )}
+      >
+        {name}
+        <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", open && "rotate-180")} />
+      </button>
+
+      {open && (
+        <div
+          className={cn(
+            "absolute top-full mt-1 min-w-[200px] bg-card border border-border rounded-2xl shadow-xl overflow-hidden z-50",
+            lang === "ar" ? "right-0" : "left-0"
+          )}
+          onMouseEnter={() => setOpen(true)}
+          onMouseLeave={() => setOpen(false)}
+        >
+          <button
+            onClick={() => { onNavigate(`/products?category=${cat.slug}`); setOpen(false); }}
+            className="w-full text-start px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-primary hover:text-primary-foreground transition-colors border-b border-border/50"
+          >
+            {lang === "ar" ? `كل ${cat.nameAr}` : `All ${cat.nameEn}`}
+          </button>
+          {cat.subcategories!.map(sub => (
+            <button
+              key={sub.id}
+              onClick={() => { onNavigate(`/products?category=${sub.slug}`); setOpen(false); }}
+              className="w-full text-start px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+            >
+              {lang === "ar" ? sub.nameAr : sub.nameEn}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function Navbar() {
@@ -19,6 +92,7 @@ export function Navbar() {
   const setIsCartOpen = useCartStore((state) => state.setIsOpen);
 
   const { data: user } = useGetCurrentUser();
+  const { data: categories } = useGetCategories();
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -29,19 +103,18 @@ export function Navbar() {
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
-  // Auto-focus search input when opened
+  const parentCategories = (categories ?? []).filter(c => !c.parentId);
+
   useEffect(() => {
     if (searchOpen) {
       setTimeout(() => searchInputRef.current?.focus(), 50);
     }
   }, [searchOpen]);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [location]);
 
-  // Close search on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -62,10 +135,7 @@ export function Navbar() {
     setLocation(`/products?q=${encodeURIComponent(q)}`);
   };
 
-  const navLinks = [
-    { href: "/", label: lang === "ar" ? "الرئيسية" : "Home", icon: Home },
-    { href: "/products", label: lang === "ar" ? "المتجر" : "Shop", icon: ShopIcon },
-  ];
+  const [mobileCatOpen, setMobileCatOpen] = useState<string | null>(null);
 
   return (
     <>
@@ -92,24 +162,39 @@ export function Navbar() {
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-10 rtl:flex-row-reverse">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "text-base font-semibold hover:text-primary transition-colors px-2 py-1",
-                    location === link.href ? "text-primary" : "text-muted-foreground"
-                  )}
-                >
-                  {link.label}
-                </Link>
+            <nav className="hidden lg:flex items-center gap-6 rtl:flex-row-reverse">
+              <Link
+                href="/"
+                className={cn(
+                  "text-base font-semibold hover:text-primary transition-colors px-2 py-1",
+                  location === "/" ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                {lang === "ar" ? "الرئيسية" : "Home"}
+              </Link>
+
+              <Link
+                href="/products"
+                className={cn(
+                  "text-base font-semibold hover:text-primary transition-colors px-2 py-1",
+                  location === "/products" ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                {lang === "ar" ? "المتجر" : "Shop"}
+              </Link>
+
+              {parentCategories.map(cat => (
+                <CategoryDropdown
+                  key={cat.id}
+                  cat={cat}
+                  lang={lang}
+                  onNavigate={setLocation}
+                />
               ))}
             </nav>
 
             {/* Icons / Actions */}
             <div className="flex items-center gap-3 sm:gap-5">
-              {/* Search */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -120,7 +205,6 @@ export function Navbar() {
                 <Search className="h-5 w-5" />
               </Button>
 
-              {/* Theme */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -130,7 +214,6 @@ export function Navbar() {
                 {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </Button>
 
-              {/* Language */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -140,16 +223,11 @@ export function Navbar() {
                 {lang === "ar" ? "EN" : "ع"}
               </Button>
 
-              {/* User / Avatar */}
               {user ? (
                 <Link href={user.role === "admin" ? "/admin" : "/profile"}>
                   <button className="w-9 h-9 rounded-full overflow-hidden border-2 border-primary/30 hover:border-primary transition-colors flex items-center justify-center bg-muted">
                     {(user as any).avatarUrl ? (
-                      <img
-                        src={(user as any).avatarUrl}
-                        alt={user.name}
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={(user as any).avatarUrl} alt={user.name} className="w-full h-full object-cover" />
                     ) : (
                       <User className="h-4 w-4 text-muted-foreground" />
                     )}
@@ -163,7 +241,6 @@ export function Navbar() {
                 </Link>
               )}
 
-              {/* Cart */}
               <Button
                 variant="default"
                 size="icon"
@@ -185,29 +262,67 @@ export function Navbar() {
         <div
           className={cn(
             "lg:hidden overflow-hidden transition-all duration-300 border-t border-border bg-card/95 backdrop-blur-sm",
-            mobileOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+            mobileOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
           )}
         >
           <nav className="px-4 py-4 space-y-1">
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-colors",
-                    location === link.href
-                      ? "bg-primary/10 text-primary"
-                      : "text-foreground hover:bg-muted"
-                  )}
+            <Link
+              href="/"
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-colors",
+                location === "/" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+              )}
+            >
+              <Home className="w-5 h-5" />
+              <span>{lang === "ar" ? "الرئيسية" : "Home"}</span>
+              <ChevronRight className={cn("w-4 h-4 ms-auto opacity-40", lang === "ar" && "rotate-180")} />
+            </Link>
+
+            <Link
+              href="/products"
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-colors",
+                location === "/products" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+              )}
+            >
+              <ShopIcon className="w-5 h-5" />
+              <span>{lang === "ar" ? "المتجر" : "Shop"}</span>
+              <ChevronRight className={cn("w-4 h-4 ms-auto opacity-40", lang === "ar" && "rotate-180")} />
+            </Link>
+
+            {parentCategories.map(cat => (
+              <div key={cat.id} className="rounded-xl overflow-hidden border border-border/50">
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-3 font-semibold text-foreground hover:bg-muted transition-colors"
+                  onClick={() => setMobileCatOpen(mobileCatOpen === cat.id ? null : cat.id)}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span>{link.label}</span>
-                  <ChevronRight className={cn("w-4 h-4 ms-auto opacity-40", lang === "ar" && "rotate-180")} />
-                </Link>
-              );
-            })}
+                  <span className="flex-1 text-start">{lang === "ar" ? cat.nameAr : cat.nameEn}</span>
+                  {(cat.subcategories?.length ?? 0) > 0 && (
+                    <ChevronDown className={cn("w-4 h-4 opacity-50 transition-transform", mobileCatOpen === cat.id && "rotate-180")} />
+                  )}
+                </button>
+
+                {mobileCatOpen === cat.id && (cat.subcategories?.length ?? 0) > 0 && (
+                  <div className="border-t border-border/50 bg-muted/30">
+                    <button
+                      onClick={() => { setLocation(`/products?category=${cat.slug}`); setMobileOpen(false); }}
+                      className="w-full text-start px-6 py-2.5 text-sm font-semibold text-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                    >
+                      {lang === "ar" ? `كل ${cat.nameAr}` : `All ${cat.nameEn}`}
+                    </button>
+                    {cat.subcategories!.map(sub => (
+                      <button
+                        key={sub.id}
+                        onClick={() => { setLocation(`/products?category=${sub.slug}`); setMobileOpen(false); }}
+                        className="w-full text-start px-6 py-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
+                      >
+                        {lang === "ar" ? sub.nameAr : sub.nameEn}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
 
             <div className="border-t border-border pt-3 mt-3">
               {user ? (
@@ -261,11 +376,7 @@ export function Navbar() {
                 dir={lang === "ar" ? "rtl" : "ltr"}
               />
               {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="text-muted-foreground hover:text-foreground"
-                >
+                <button type="button" onClick={() => setSearchQuery("")} className="text-muted-foreground hover:text-foreground">
                   <X className="w-5 h-5" />
                 </button>
               )}
@@ -274,10 +385,7 @@ export function Navbar() {
               <span className="text-xs text-muted-foreground">
                 {lang === "ar" ? "اضغط Enter للبحث" : "Press Enter to search"}
               </span>
-              <button
-                onClick={() => setSearchOpen(false)}
-                className="text-xs text-muted-foreground hover:text-foreground font-medium"
-              >
+              <button onClick={() => setSearchOpen(false)} className="text-xs text-muted-foreground hover:text-foreground font-medium">
                 {lang === "ar" ? "إغلاق" : "Close"} (Esc)
               </button>
             </div>

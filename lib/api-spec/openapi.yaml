@@ -968,8 +968,14 @@ components:
           type: string
         imageUrl:
           type: string
+        parentId:
+          type: string
         productCount:
           type: integer
+        subcategories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
       required:
         - id
         - nameAr
@@ -986,6 +992,8 @@ components:
         slug:
           type: string
         imageUrl:
+          type: string
+        parentId:
           type: string
       required:
         - nameAr
