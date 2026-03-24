@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useEffect } from "react";
-import { Package, FolderTree, ShoppingCart, Users, Truck, Settings, LogOut, LayoutDashboard, Globe } from "lucide-react";
+import { Package, FolderTree, ShoppingCart, Users, Truck, Settings, LogOut, LayoutDashboard, Globe, BookOpen } from "lucide-react";
 import { useGetCurrentUser } from "@workspace/api-client-react";
 import { useTranslation } from "@/lib/i18n";
 import { useAppStore } from "@/lib/store";
@@ -11,6 +11,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [location, setLocation] = useLocation();
   const { data: user, isLoading } = useGetCurrentUser();
   const { t, lang } = useTranslation();
+  const isAr = lang === "ar";
   const { setLang } = useAppStore();
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: "/admin/users", label: t('users'), icon: Users },
     { href: "/admin/shipping", label: t('shipping_zones'), icon: Truck },
     { href: "/admin/settings", label: t('store_settings'), icon: Settings },
+    { href: "/admin/articles", label: isAr ? "المقالات" : "Articles", icon: BookOpen },
   ];
 
   const handleLogout = () => {

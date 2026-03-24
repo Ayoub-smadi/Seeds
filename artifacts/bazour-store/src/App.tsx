@@ -9,6 +9,9 @@ import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
 import Checkout from "./pages/Checkout";
 import Profile from "./pages/Profile";
+import About from "./pages/About";
+import Articles from "./pages/Articles";
+import ArticleDetail from "./pages/ArticleDetail";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -19,6 +22,7 @@ import CategoriesAdmin from "./pages/admin/CategoriesAdmin";
 import UsersAdmin from "./pages/admin/UsersAdmin";
 import ShippingAdmin from "./pages/admin/ShippingAdmin";
 import SettingsAdmin from "./pages/admin/SettingsAdmin";
+import ArticlesAdmin from "./pages/admin/ArticlesAdmin";
 import NotFound from "./pages/not-found";
 
 // Layout
@@ -52,6 +56,7 @@ function Router() {
       <Route path="/admin/users" component={() => <AdminLayout><UsersAdmin /></AdminLayout>} />
       <Route path="/admin/shipping" component={() => <AdminLayout><ShippingAdmin /></AdminLayout>} />
       <Route path="/admin/settings" component={() => <AdminLayout><SettingsAdmin /></AdminLayout>} />
+      <Route path="/admin/articles" component={() => <AdminLayout><ArticlesAdmin /></AdminLayout>} />
 
       {/* Auth */}
       <Route path="/auth/login" component={() => <PublicLayout><Login /></PublicLayout>} />
@@ -63,6 +68,9 @@ function Router() {
       <Route path="/products/:id" component={() => <PublicLayout><ProductDetail /></PublicLayout>} />
       <Route path="/checkout" component={() => <PublicLayout><Checkout /></PublicLayout>} />
       <Route path="/profile" component={() => <PublicLayout><Profile /></PublicLayout>} />
+      <Route path="/about" component={() => <PublicLayout><About /></PublicLayout>} />
+      <Route path="/articles" component={() => <PublicLayout><Articles /></PublicLayout>} />
+      <Route path="/articles/:slug" component={() => <PublicLayout><ArticleDetail /></PublicLayout>} />
 
       <Route component={() => <PublicLayout><NotFound /></PublicLayout>} />
     </Switch>

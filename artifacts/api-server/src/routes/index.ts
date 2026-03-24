@@ -11,6 +11,7 @@ import shippingRouter from "./shipping";
 import offersRouter from "./offers";
 import uploadRouter from "./upload";
 import settingsRouter from "./settings";
+import articlesRouter from "./articles";
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use("/shipping", shippingRouter);
 router.use("/offers", offersRouter);
 router.use("/upload", uploadRouter);
 router.use("/settings", settingsRouter);
+router.use("/articles", articlesRouter);
 
 export default router;
