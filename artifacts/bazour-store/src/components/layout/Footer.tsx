@@ -49,7 +49,7 @@ export function Footer() {
           </div>
         </div>
         
-        <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="border-t border-border pt-8 flex justify-center">
           <p className="text-sm text-muted-foreground">
             © {year} بذور Seeds Store. جميع الحقوق محفوظة.
           </p>
