@@ -13,6 +13,7 @@ export const settingsTable = pgTable("settings", {
   socialFacebook: text("social_facebook"),
   socialInstagram: text("social_instagram"),
   socialTwitter: text("social_twitter"),
+  socialWhatsapp: text("social_whatsapp"),
   currency: text("currency").default("JOD"),
   currencySymbol: text("currency_symbol").default("د.أ"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

@@ -25,6 +25,7 @@ export default function SettingsAdmin() {
     socialFacebook: "",
     socialInstagram: "",
     socialTwitter: "",
+    socialWhatsapp: "",
   });
 
   useEffect(() => {
