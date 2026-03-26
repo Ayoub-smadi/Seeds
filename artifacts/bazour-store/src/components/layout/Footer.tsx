@@ -1,10 +1,20 @@
 import { Link } from "wouter";
 import { useTranslation } from "@/lib/i18n";
 import { BazourLogo } from "@/components/ui/BazourLogo";
+import { useGetSettings } from "@workspace/api-client-react";
+import { FaFacebook, FaInstagram, FaXTwitter, FaWhatsapp } from "react-icons/fa6";
 
 export function Footer() {
   const { t } = useTranslation();
+  const { data: settings } = useGetSettings();
   const year = new Date().getFullYear();
+
+  const socials = [
+    { href: settings?.socialFacebook, icon: FaFacebook, label: "Facebook", color: "hover:text-blue-500" },
+    { href: settings?.socialInstagram, icon: FaInstagram, label: "Instagram", color: "hover:text-pink-500" },
+    { href: settings?.socialTwitter, icon: FaXTwitter, label: "Twitter / X", color: "hover:text-foreground" },
+    { href: settings?.socialWhatsapp, icon: FaWhatsapp, label: "WhatsApp", color: "hover:text-green-500" },
+  ].filter(s => s.href);
 
   return (
     <footer className="bg-card border-t border-border mt-20 pt-16 pb-8">
@@ -17,6 +27,23 @@ export function Footer() {
             <p className="text-muted-foreground text-sm leading-relaxed">
               {t('hero_subtitle')}
             </p>
+
+            {socials.length > 0 && (
+              <div className="flex items-center gap-3 mt-5">
+                {socials.map(({ href, icon: Icon, label, color }) => (
+                  <a
+                    key={label}
+                    href={href!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className={`text-muted-foreground ${color} transition-colors`}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
           
           <div>
