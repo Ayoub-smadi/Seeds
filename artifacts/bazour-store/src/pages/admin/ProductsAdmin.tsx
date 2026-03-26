@@ -6,18 +6,18 @@ import { Plus, Search, Edit, Trash2, Image as ImageIcon, Upload, Download, X, Fi
 import { formatPrice } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { useQueryClient } from "@tanstack/react-query";
-import { ImageUpload } from "@/components/admin/ImageUpload";
+import { MultiImageUpload } from "@/components/admin/MultiImageUpload";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 type FormData = {
   nameAr: string; nameEn: string; descriptionAr: string; descriptionEn: string;
   price: string; salePrice: string; quantity: string; categoryId: string;
-  imageUrl: string; onSale: boolean;
+  images: string[]; onSale: boolean;
 };
 const emptyForm: FormData = {
   nameAr: "", nameEn: "", descriptionAr: "", descriptionEn: "",
-  price: "", salePrice: "", quantity: "", categoryId: "", imageUrl: "", onSale: false,
+  price: "", salePrice: "", quantity: "", categoryId: "", images: ["", ""], onSale: false,
 };
 
 const CSV_COLUMNS = [
@@ -84,7 +84,7 @@ export default function ProductsAdmin() {
       descriptionAr: p.descriptionAr ?? "", descriptionEn: p.descriptionEn ?? "",
       price: String(p.price ?? ""), salePrice: String(p.salePrice ?? ""),
       quantity: String(p.quantity ?? ""), categoryId: p.categoryId ?? "",
-      imageUrl: p.images?.[0] ?? "", onSale: !!p.onSale,
+      images: [p.images?.[0] ?? "", p.images?.[1] ?? ""], onSale: !!p.onSale,
     }
   });
 
@@ -99,7 +99,7 @@ export default function ProductsAdmin() {
       salePrice: f.salePrice ? parseFloat(f.salePrice) : undefined,
       quantity: parseInt(f.quantity) || 0,
       categoryId: f.categoryId || undefined,
-      images: f.imageUrl ? [f.imageUrl] : [],
+      images: f.images.filter(Boolean),
       onSale: f.onSale,
     };
 
@@ -497,10 +497,11 @@ export default function ProductsAdmin() {
                 </select>
               </div>
             </div>
-            <ImageUpload
-              label={lang === 'ar' ? 'صورة المنتج' : 'Product image'}
-              value={modal.form.imageUrl}
-              onChange={url => setModal(m => m ? { ...m, form: { ...m.form, imageUrl: url } } : m)}
+            <MultiImageUpload
+              label={lang === 'ar' ? 'صور المنتج' : 'Product images'}
+              values={modal.form.images}
+              onChange={urls => setModal(m => m ? { ...m, form: { ...m.form, images: urls } } : m)}
+              max={2}
             />
             <div className="space-y-1">
               <label className="text-sm font-medium">{t('description_en')}</label>
