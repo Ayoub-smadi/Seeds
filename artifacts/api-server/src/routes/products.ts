@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { productsTable, categoriesTable } from "@workspace/db/schema";
-import { eq, ilike, and, gte, lte, sql, desc, asc } from "drizzle-orm";
-import { requireAdmin } from "../lib/auth";
+import { productsTable, categoriesTable, reviewsTable } from "@workspace/db/schema";
+import { eq, ilike, and, gte, lte, sql, desc, asc, ne, avg } from "drizzle-orm";
+import { requireAdmin, requireAuth, optionalAuth } from "../lib/auth";
+import type { JwtPayload } from "../lib/auth";
 
 const router = Router();
 
@@ -148,6 +149,99 @@ router.delete("/:id", requireAdmin, async (req, res) => {
     res.json({ success: true, message: "Product deleted" });
   } catch (err) {
     req.log.error({ err }, "Delete product error");
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// GET related products by category
+router.get("/:id/related", async (req, res) => {
+  try {
+    const [product] = await db.select({ categoryId: productsTable.categoryId })
+      .from(productsTable).where(eq(productsTable.id, req.params["id"]!)).limit(1);
+    if (!product) { res.json({ products: [] }); return; }
+
+    const conditions = [ne(productsTable.id, req.params["id"]!)];
+    if (product.categoryId) conditions.push(eq(productsTable.categoryId, product.categoryId));
+
+    const related = await db.select({ product: productsTable, category: categoriesTable })
+      .from(productsTable)
+      .leftJoin(categoriesTable, eq(productsTable.categoryId, categoriesTable.id))
+      .where(and(...conditions))
+      .orderBy(desc(productsTable.createdAt))
+      .limit(4);
+
+    res.json({
+      products: related.map(({ product: p, category: c }) => ({
+        ...p,
+        price: parseFloat(String(p.price)),
+        salePrice: p.salePrice ? parseFloat(String(p.salePrice)) : undefined,
+        rating: p.rating ? parseFloat(String(p.rating)) : 0,
+        category: c ? { id: c.id, nameAr: c.nameAr, nameEn: c.nameEn } : undefined,
+      })),
+    });
+  } catch (err) {
+    req.log.error({ err }, "Get related products error");
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// GET reviews for a product
+router.get("/:id/reviews", async (req, res) => {
+  try {
+    const reviews = await db.select()
+      .from(reviewsTable)
+      .where(eq(reviewsTable.productId, req.params["id"]!))
+      .orderBy(desc(reviewsTable.createdAt));
+    res.json({ reviews });
+  } catch (err) {
+    req.log.error({ err }, "Get reviews error");
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// POST a review (auth required, one per user per product)
+router.post("/:id/reviews", requireAuth, async (req, res) => {
+  try {
+    const { userId, email } = (req as typeof req & { user: JwtPayload }).user;
+    const productId = req.params["id"]!;
+
+    const existing = await db.select({ id: reviewsTable.id })
+      .from(reviewsTable)
+      .where(and(eq(reviewsTable.productId, productId), eq(reviewsTable.userId, userId)))
+      .limit(1);
+    if (existing.length > 0) {
+      res.status(400).json({ error: "Bad Request", message: "You have already reviewed this product" });
+      return;
+    }
+
+    const { rating, comment, userName } = req.body as { rating: number; comment?: string; userName?: string };
+    if (!rating || rating < 1 || rating > 5) {
+      res.status(400).json({ error: "Bad Request", message: "Rating must be between 1 and 5" });
+      return;
+    }
+
+    const [review] = await db.insert(reviewsTable).values({
+      productId, userId,
+      userName: userName || email.split("@")[0]!,
+      rating,
+      comment: comment || null,
+    }).returning();
+
+    // Recalculate product rating and count
+    const [agg] = await db.select({
+      avg: avg(reviewsTable.rating),
+      count: sql<number>`count(*)`,
+    }).from(reviewsTable).where(eq(reviewsTable.productId, productId));
+
+    await db.update(productsTable).set({
+      rating: agg?.avg ? String(parseFloat(String(agg.avg)).toFixed(2)) : "0",
+      reviewCount: Number(agg?.count || 0),
+      updatedAt: new Date(),
+    }).where(eq(productsTable.id, productId));
+
+    res.status(201).json(review);
+  } catch (err) {
+    req.log.error({ err }, "Post review error");
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
