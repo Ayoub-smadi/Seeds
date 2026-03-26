@@ -3,6 +3,7 @@ import { useTranslation } from "@/lib/i18n";
 import { BazourLogo } from "@/components/ui/BazourLogo";
 import { useGetSettings } from "@workspace/api-client-react";
 import { FaFacebook, FaInstagram, FaXTwitter, FaWhatsapp } from "react-icons/fa6";
+import { Mail } from "lucide-react";
 
 export function Footer() {
   const { t } = useTranslation();
@@ -58,6 +59,17 @@ export function Footer() {
             <h4 className="font-semibold text-foreground mb-4">{t('about')}</h4>
             <ul className="space-y-3">
               <li><a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">{t('contact')}</a></li>
+              {settings?.contactEmail && (
+                <li>
+                  <a
+                    href={`mailto:${settings.contactEmail}`}
+                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <Mail className="w-4 h-4 flex-shrink-0" />
+                    {settings.contactEmail}
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
 
