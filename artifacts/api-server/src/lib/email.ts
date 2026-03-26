@@ -45,25 +45,32 @@ function buildOrderConfirmationHtml(data: OrderEmailData): string {
   const formatPrice = (amount: number) =>
     `${amount.toFixed(3)} د.أ`;
 
+  const isAbsoluteUrl = (url?: string) =>
+    !!url && (url.startsWith("http://") || url.startsWith("https://"));
+
   const itemRows = items
     .map(
       (item) => `
       <tr>
-        <td style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0;">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            ${item.productImage
-              ? `<img src="${item.productImage}" alt="${item.nameAr}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid #e5e5e5;" />`
-              : `<div style="width:48px;height:48px;border-radius:8px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:20px;">🌱</div>`
-            }
-            <div>
-              <div style="font-weight:600;color:#1a1a1a;">${item.nameAr}</div>
-              <div style="font-size:13px;color:#888;">${item.nameEn}</div>
-            </div>
-          </div>
+        <td style="padding:16px;border-bottom:1px solid #f0f0f0;vertical-align:middle;">
+          <table cellpadding="0" cellspacing="0" border="0" style="width:100%;">
+            <tr>
+              <td style="width:88px;vertical-align:middle;padding-left:12px;">
+                ${isAbsoluteUrl(item.productImage)
+                  ? `<img src="${item.productImage}" alt="${item.nameAr}" width="80" height="80" style="display:block;width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid #e5e5e5;" />`
+                  : `<table cellpadding="0" cellspacing="0" border="0"><tr><td width="80" height="80" align="center" valign="middle" style="background:#f0f7f4;border-radius:10px;font-size:28px;border:1px solid #d4edda;">🌱</td></tr></table>`
+                }
+              </td>
+              <td style="vertical-align:middle;padding-right:4px;">
+                <div style="font-weight:700;font-size:15px;color:#1a1a1a;margin-bottom:4px;">${item.nameAr}</div>
+                <div style="font-size:13px;color:#888;">${item.nameEn}</div>
+              </td>
+            </tr>
+          </table>
         </td>
-        <td style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0; text-align: center; color: #555;">${item.quantity}</td>
-        <td style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0; text-align: right; color: #555;">${formatPrice(item.price)}</td>
-        <td style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0; text-align: right; font-weight: 600; color: #2d6a4f;">${formatPrice(item.price * item.quantity)}</td>
+        <td style="padding:16px;border-bottom:1px solid #f0f0f0;text-align:center;vertical-align:middle;color:#555;font-size:15px;white-space:nowrap;">${item.quantity}</td>
+        <td style="padding:16px;border-bottom:1px solid #f0f0f0;text-align:right;vertical-align:middle;color:#555;font-size:14px;white-space:nowrap;">${formatPrice(item.price)}</td>
+        <td style="padding:16px;border-bottom:1px solid #f0f0f0;text-align:right;vertical-align:middle;font-weight:700;font-size:15px;color:#2d6a4f;white-space:nowrap;">${formatPrice(item.price * item.quantity)}</td>
       </tr>`
     )
     .join("");
