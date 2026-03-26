@@ -8,11 +8,12 @@ const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 interface MultiImageUploadProps {
   values: string[];
   onChange: (urls: string[]) => void;
+  onUploadingChange?: (isUploading: boolean) => void;
   max?: number;
   label?: string;
 }
 
-export function MultiImageUpload({ values, onChange, max = 2, label }: MultiImageUploadProps) {
+export function MultiImageUpload({ values, onChange, onUploadingChange, max = 2, label }: MultiImageUploadProps) {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [uploading, setUploading] = useState<boolean[]>([]);
   const [errors, setErrors] = useState<(string | null)[]>([]);
@@ -31,6 +32,8 @@ export function MultiImageUpload({ values, onChange, max = 2, label }: MultiImag
     setUploading(prev => {
       const next = [...prev];
       next[idx] = val;
+      const anyUploading = next.some(Boolean);
+      onUploadingChange?.(anyUploading);
       return next;
     });
   };

@@ -7,10 +7,10 @@ import { useTranslation } from "@/lib/i18n";
 import { useCartStore } from "@/lib/store";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { useCreateOrder, useGetShippingZones } from "@workspace/api-client-react";
+import { useCreateOrder, useGetShippingZones, useGetCurrentUser } from "@workspace/api-client-react";
 import { CreditCard, Banknote, MapPin, Truck, CheckCircle2 } from "lucide-react";
 
-// Mock validation schema matching backend schema structure
+// Validation schema matching backend schema structure
 const checkoutSchema = z.object({
   shippingAddress: z.object({
     name: z.string().min(2),
@@ -19,6 +19,7 @@ const checkoutSchema = z.object({
     area: z.string().optional(),
     street: z.string().optional(),
   }),
+  customerEmail: z.string().email().optional().or(z.literal("")),
   shippingZoneId: z.string().min(1),
   paymentMethod: z.enum(['stripe', 'cash_on_delivery']),
 });
@@ -30,7 +31,9 @@ export default function Checkout() {
   const [_, setLocation] = useLocation();
   const { items, getTotal, clearCart } = useCartStore();
   const [orderSuccess, setOrderSuccess] = useState(false);
-  
+  const { data: currentUser } = useGetCurrentUser();
+  const isGuest = !currentUser;
+
   const { data: shippingZones } = useGetShippingZones();
   const { mutate: createOrder, isPending } = useCreateOrder({
     mutation: {
@@ -92,7 +95,9 @@ export default function Checkout() {
       quantity: item.quantity,
       price: item.product.salePrice || item.product.price,
     }));
-    createOrder({ data: { ...data, cartItems } as any });
+    const payload: any = { ...data, cartItems };
+    if (data.customerEmail) payload.customerEmail = data.customerEmail;
+    createOrder({ data: payload });
   };
 
   return (
@@ -119,13 +124,30 @@ export default function Checkout() {
                   <input {...register("shippingAddress.phone")} className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">City</label>
+                  <label className="text-sm font-medium">{lang === 'ar' ? 'المدينة' : 'City'}</label>
                   <input {...register("shippingAddress.city")} className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Street</label>
+                  <label className="text-sm font-medium">{lang === 'ar' ? 'الشارع' : 'Street'}</label>
                   <input {...register("shippingAddress.street")} className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0" />
                 </div>
+                {isGuest && (
+                  <div className="space-y-2 sm:col-span-2">
+                    <label className="text-sm font-medium">
+                      {lang === 'ar' ? 'البريد الإلكتروني (لاستلام تأكيد الطلب)' : 'Email (to receive order confirmation)'}
+                      <span className="text-muted-foreground text-xs ms-1">{lang === 'ar' ? '— اختياري' : '— optional'}</span>
+                    </label>
+                    <input
+                      {...register("customerEmail")}
+                      type="email"
+                      placeholder={lang === 'ar' ? 'example@email.com' : 'example@email.com'}
+                      className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0"
+                    />
+                    {errors.customerEmail && (
+                      <p className="text-xs text-destructive">{lang === 'ar' ? 'بريد إلكتروني غير صحيح' : 'Invalid email address'}</p>
+                    )}
+                  </div>
+                )}
               </div>
             </section>
 

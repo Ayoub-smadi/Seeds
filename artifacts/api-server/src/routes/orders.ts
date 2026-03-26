@@ -63,7 +63,7 @@ router.get("/", requireAuth, async (req, res) => {
 router.post("/", optionalAuth, async (req, res) => {
   try {
     const userId = (req as typeof req & { user?: JwtPayload }).user?.userId ?? null;
-    const { shippingAddress, shippingZoneId, paymentMethod, offerCode, notes, cartItems: bodyCartItems } = req.body;
+    const { shippingAddress, shippingZoneId, paymentMethod, offerCode, notes, cartItems: bodyCartItems, customerEmail } = req.body;
 
     if (!shippingAddress?.name || !shippingAddress?.phone) {
       res.status(400).json({ error: "Bad Request", message: "Shipping address with name and phone is required" });
@@ -167,6 +167,23 @@ router.post("/", optionalAuth, async (req, res) => {
       clientSecret = intent.client_secret || undefined;
     }
 
+    const emailPayload = {
+      orderNumber: order.orderNumber,
+      items: items.map(i => ({
+        nameAr: i.productNameAr || i.productNameEn,
+        nameEn: i.productNameEn || i.productNameAr,
+        quantity: i.quantity,
+        price: i.price,
+        productImage: i.productImage,
+      })),
+      subtotal,
+      shippingCost,
+      discount,
+      total,
+      shippingAddress,
+      paymentMethod,
+    };
+
     if (userId) {
       const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
       if (user?.phone) {
@@ -176,22 +193,15 @@ router.post("/", optionalAuth, async (req, res) => {
         await sendOrderConfirmationEmail({
           customerName: user.name || shippingAddress?.name || "عزيزي العميل",
           customerEmail: user.email,
-          orderNumber: order.orderNumber,
-          items: items.map(i => ({
-            nameAr: i.productNameAr || i.productNameEn,
-            nameEn: i.productNameEn || i.productNameAr,
-            quantity: i.quantity,
-            price: i.price,
-            productImage: i.productImage,
-          })),
-          subtotal,
-          shippingCost,
-          discount,
-          total,
-          shippingAddress,
-          paymentMethod,
+          ...emailPayload,
         });
       }
+    } else if (customerEmail) {
+      await sendOrderConfirmationEmail({
+        customerName: shippingAddress?.name || "عزيزي العميل",
+        customerEmail,
+        ...emailPayload,
+      });
     }
 
     res.status(201).json({

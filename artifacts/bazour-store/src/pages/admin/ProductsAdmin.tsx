@@ -52,6 +52,7 @@ export default function ProductsAdmin() {
 
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<null | { mode: 'add' | 'edit'; id?: string; form: FormData }>(null);
+  const [imageUploading, setImageUploading] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [importTab, setImportTab] = useState<'csv' | 'text'>('text');
@@ -76,8 +77,8 @@ export default function ProductsAdmin() {
     p.nameAr?.includes(search)
   );
 
-  const openAdd = () => setModal({ mode: 'add', form: { ...emptyForm } });
-  const openEdit = (p: any) => setModal({
+  const openAdd = () => { setImageUploading(false); setModal({ mode: 'add', form: { ...emptyForm } }); };
+  const openEdit = (p: any) => { setImageUploading(false); setModal({
     mode: 'edit', id: p.id,
     form: {
       nameAr: p.nameAr ?? "", nameEn: p.nameEn ?? "",
@@ -86,7 +87,7 @@ export default function ProductsAdmin() {
       quantity: String(p.quantity ?? ""), categoryId: p.categoryId ?? "",
       images: [p.images?.[0] ?? "", p.images?.[1] ?? ""], onSale: !!p.onSale,
     }
-  });
+  }); };
 
   const handleSave = () => {
     if (!modal) return;
@@ -501,6 +502,7 @@ export default function ProductsAdmin() {
               label={lang === 'ar' ? 'صور المنتج' : 'Product images'}
               values={modal.form.images}
               onChange={urls => setModal(m => m ? { ...m, form: { ...m.form, images: urls } } : m)}
+              onUploadingChange={setImageUploading}
               max={2}
             />
             <div className="space-y-1">
@@ -532,8 +534,8 @@ export default function ProductsAdmin() {
               <span className="text-sm font-medium">{t('on_sale')}</span>
             </label>
             <div className="flex gap-3 pt-2">
-              <Button className="flex-1 rounded-xl" onClick={handleSave} disabled={createMut.isPending || updateMut.isPending}>
-                {t('save')}
+              <Button className="flex-1 rounded-xl" onClick={handleSave} disabled={createMut.isPending || updateMut.isPending || imageUploading}>
+                {imageUploading ? (lang === 'ar' ? 'جاري رفع الصور...' : 'Uploading images...') : t('save')}
               </Button>
               <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setModal(null)}>
                 {t('cancel')}
