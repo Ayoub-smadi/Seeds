@@ -76,4 +76,57 @@ router.get("/me", requireAuth, async (req, res) => {
   }
 });
 
+router.put("/update-credentials", requireAuth, async (req, res) => {
+  try {
+    const { userId, role } = (req as typeof req & { user: JwtPayload }).user;
+    if (role !== "admin") {
+      res.status(403).json({ error: "Forbidden", message: "Admin only" });
+      return;
+    }
+    const { email, currentPassword, newPassword } = req.body as { email?: string; currentPassword?: string; newPassword?: string };
+
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!user) {
+      res.status(404).json({ error: "Not Found" });
+      return;
+    }
+
+    if (newPassword) {
+      if (!currentPassword) {
+        res.status(400).json({ error: "Bad Request", message: "Current password required" });
+        return;
+      }
+      const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!valid) {
+        res.status(401).json({ error: "Unauthorized", message: "Current password is incorrect" });
+        return;
+      }
+    }
+
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+    if (email && email !== user.email) {
+      const existing = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+      if (existing.length > 0) {
+        res.status(400).json({ error: "Bad Request", message: "Email already in use" });
+        return;
+      }
+      updates["email"] = email;
+    }
+    if (newPassword) {
+      updates["passwordHash"] = await bcrypt.hash(newPassword, 10);
+    }
+
+    const [updated] = await db.update(usersTable)
+      .set(updates)
+      .where(eq(usersTable.id, userId))
+      .returning({ id: usersTable.id, name: usersTable.name, email: usersTable.email, role: usersTable.role });
+
+    const token = signToken({ userId: updated!.id, email: updated!.email, role: updated!.role });
+    res.json({ success: true, token, user: updated });
+  } catch (err) {
+    req.log.error({ err }, "Update credentials error");
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 export default router;

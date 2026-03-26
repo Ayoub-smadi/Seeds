@@ -42,6 +42,7 @@ export default function SettingsAdmin() {
         socialFacebook: settings.socialFacebook ?? "",
         socialInstagram: settings.socialInstagram ?? "",
         socialTwitter: settings.socialTwitter ?? "",
+        socialWhatsapp: settings.socialWhatsapp ?? "",
       });
     }
   }, [settings]);
@@ -73,6 +74,7 @@ export default function SettingsAdmin() {
     { key: 'socialFacebook', label: t('social_facebook'), placeholder: 'https://facebook.com/...' },
     { key: 'socialInstagram', label: t('social_instagram'), placeholder: 'https://instagram.com/...' },
     { key: 'socialTwitter', label: 'Twitter / X URL', placeholder: 'https://x.com/...' },
+    { key: 'socialWhatsapp', label: lang === 'ar' ? 'رابط واتساب' : 'WhatsApp URL', placeholder: 'https://wa.me/962...' },
   ];
 
   if (isLoading) {
