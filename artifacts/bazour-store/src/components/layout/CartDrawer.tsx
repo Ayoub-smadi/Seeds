@@ -5,15 +5,21 @@ import { useTranslation } from "@/lib/i18n";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
+import { useGetCurrentUser } from "@workspace/api-client-react";
 
 export function CartDrawer() {
   const { isOpen, setIsOpen, items, updateQuantity, removeItem, getTotal } = useCartStore();
   const { t, lang } = useTranslation();
   const [_, setLocation] = useLocation();
+  const { data: currentUser } = useGetCurrentUser();
 
   const handleCheckout = () => {
     setIsOpen(false);
-    setLocation("/checkout");
+    if (!currentUser) {
+      setLocation("/auth/login");
+    } else {
+      setLocation("/checkout");
+    }
   };
 
   return (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,7 +7,7 @@ import { useTranslation } from "@/lib/i18n";
 import { useCartStore } from "@/lib/store";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { useCreateOrder, useGetShippingZones } from "@workspace/api-client-react";
+import { useCreateOrder, useGetShippingZones, useGetCurrentUser } from "@workspace/api-client-react";
 import { CreditCard, Banknote, MapPin, Truck, CheckCircle2 } from "lucide-react";
 
 // Validation schema matching backend schema structure
@@ -30,6 +30,14 @@ export default function Checkout() {
   const [_, setLocation] = useLocation();
   const { items, getTotal, clearCart } = useCartStore();
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const { data: currentUser, isLoading: isAuthLoading } = useGetCurrentUser();
+
+  useEffect(() => {
+    if (!isAuthLoading && !currentUser) {
+      setLocation("/auth/login");
+    }
+  }, [isAuthLoading, currentUser, setLocation]);
+
   const { data: shippingZones } = useGetShippingZones();
   const { mutate: createOrder, isPending } = useCreateOrder({
     mutation: {
@@ -55,6 +63,10 @@ export default function Checkout() {
   const selectedZone = shippingZones?.find(z => z.id === selectedZoneId);
   const shippingCost = selectedZone?.price || 0;
   const finalTotal = getTotal() + shippingCost;
+
+  if (isAuthLoading || !currentUser) {
+    return <div className="min-h-[70vh] flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  }
 
   if (orderSuccess) {
     return (
