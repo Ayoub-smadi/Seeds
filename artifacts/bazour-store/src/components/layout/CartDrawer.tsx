@@ -5,6 +5,7 @@ import { useCartStore } from "@/lib/store";
 import { useTranslation } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { useCurrency } from "@/lib/useCurrency";
+import { formatPrice } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Link, useLocation } from "wouter";
 import { useGetCurrentUser } from "@workspace/api-client-react";
