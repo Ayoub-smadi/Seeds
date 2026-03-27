@@ -5,7 +5,7 @@ import { eq, desc, sql } from "drizzle-orm";
 import { requireAuth, requireAdmin, optionalAuth } from "../lib/auth";
 import type { JwtPayload } from "../lib/auth";
 import { sendOrderConfirmedSms, sendOrderShippedSms } from "../lib/sms";
-import { sendOrderConfirmationEmail } from "../lib/email";
+import { sendOrderConfirmationEmail, sendOrderCancelledEmail } from "../lib/email";
 
 const router = Router();
 
@@ -280,10 +280,32 @@ router.put("/:id/status", requireAdmin, async (req, res) => {
       return;
     }
 
-    if (status === "shipped") {
-      const [user] = await db.select().from(usersTable).where(eq(usersTable.id, order.userId || "")).limit(1);
-      if (user?.phone) {
+    if (order.userId) {
+      const [user] = await db.select().from(usersTable).where(eq(usersTable.id, order.userId)).limit(1);
+
+      if (status === "shipped" && user?.phone) {
         await sendOrderShippedSms(user.phone, order.orderNumber);
+      }
+
+      if (status === "cancelled" && user?.email) {
+        const items = (order.items as any[]).map((i: any) => ({
+          nameAr: i.productNameAr || i.nameAr || "",
+          nameEn: i.productNameEn || i.nameEn || "",
+          quantity: i.quantity,
+          price: i.price,
+          productImage: i.productImage,
+        }));
+        await sendOrderCancelledEmail({
+          customerName: user.name || (order.shippingAddress as any)?.name || "عزيزي العميل",
+          customerEmail: user.email,
+          orderNumber: order.orderNumber,
+          items,
+        });
+      }
+    } else if (status === "shipped") {
+      const shippingAddr = order.shippingAddress as any;
+      if (shippingAddr?.phone) {
+        await sendOrderShippedSms(shippingAddr.phone, order.orderNumber);
       }
     }
 
