@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useGetOrders, useUpdateOrderStatus } from "@workspace/api-client-react";
 import { getGetOrdersQueryKey } from "@workspace/api-client-react";
-import { formatPrice } from "@/lib/utils";
+import { useCurrency } from "@/lib/useCurrency";
 import { useTranslation } from "@/lib/i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import { Search, ChevronDown, ChevronUp, Trash2 } from "lucide-react";

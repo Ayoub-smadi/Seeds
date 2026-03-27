@@ -5,7 +5,7 @@ import { Plus, Edit, Trash2, Truck } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetShippingZonesQueryKey } from "@workspace/api-client-react";
-import { formatPrice } from "@/lib/utils";
+import { useCurrency } from "@/lib/useCurrency";
 
 type FormData = { nameAr: string; nameEn: string; price: string; estimatedDays: string };
 const empty: FormData = { nameAr: "", nameEn: "", price: "", estimatedDays: "" };

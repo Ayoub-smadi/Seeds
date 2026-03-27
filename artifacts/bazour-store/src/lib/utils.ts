@@ -5,10 +5,9 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatPrice(price: number, _currency = 'JOD', lang = 'en') {
+export function formatPrice(price: number, _currency = 'JOD', lang = 'en', symbol?: string) {
   const formatted = price.toFixed(3);
-  if (lang === 'ar') {
-    return `${formatted} د.أ`;
-  }
+  if (symbol) return `${formatted} ${symbol}`;
+  if (lang === 'ar') return `${formatted} د.أ`;
   return `${formatted} JD`;
 }

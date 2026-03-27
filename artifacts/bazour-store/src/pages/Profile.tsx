@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getGetCurrentUserQueryKey, getGetOrdersQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
-import { formatPrice } from "@/lib/utils";
+import { useCurrency } from "@/lib/useCurrency";
 import { User, Package, Camera, LogOut, Edit2, Check, X } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";

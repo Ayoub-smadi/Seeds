@@ -126,6 +126,10 @@ const translations = {
     fast_secure_delivery: 'Fast & secure delivery',
     newsletter: 'Newsletter',
     newsletter_submit: 'Submit',
+    shipping_method: 'Shipping Method',
+    order_summary: 'Order Summary',
+    shipping: 'Shipping',
+    qty: 'Qty',
     copyright: '© {year} بذور Seeds Store. All rights reserved.',
   },
   ar: {
@@ -253,6 +257,10 @@ const translations = {
     fast_secure_delivery: 'توصيل سريع وآمن',
     newsletter: 'النشرة الإخبارية',
     newsletter_submit: 'إرسال',
+    shipping_method: 'طريقة الشحن',
+    order_summary: 'ملخص الطلب',
+    shipping: 'الشحن',
+    qty: 'الكمية',
     copyright: '© {year} بذور Seeds Store. جميع الحقوق محفوظة.',
   }
 };

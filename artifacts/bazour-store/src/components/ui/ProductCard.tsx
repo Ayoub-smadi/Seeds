@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { ShoppingBag, Star, Eye } from "lucide-react";
 import { Product } from "@workspace/api-client-react";
 import { useTranslation } from "@/lib/i18n";
-import { formatPrice, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { useCurrency } from "@/lib/useCurrency";
 import { useCartStore } from "@/lib/store";
 import { Button } from "./button";
 
@@ -14,6 +15,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product, className }: ProductCardProps) {
   const { t, lang } = useTranslation();
+  const { format } = useCurrency();
   const addItem = useCartStore((state) => state.addItem);
   
   const name = lang === 'ar' ? product.nameAr : product.nameEn;
@@ -77,11 +79,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
           <div>
             {product.onSale && product.salePrice ? (
               <div className="flex items-center gap-2">
-                <span className="font-bold text-lg text-primary">{formatPrice(product.salePrice, 'SAR', lang)}</span>
-                <span className="text-sm text-muted-foreground line-through">{formatPrice(product.price, 'SAR', lang)}</span>
+                <span className="font-bold text-lg text-primary">{format(product.salePrice)}</span>
+                <span className="text-sm text-muted-foreground line-through">{format(product.price)}</span>
               </div>
             ) : (
-              <span className="font-bold text-lg text-foreground">{formatPrice(product.price, 'SAR', lang)}</span>
+              <span className="font-bold text-lg text-foreground">{format(product.price)}</span>
             )}
           </div>
           

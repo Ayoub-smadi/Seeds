@@ -3,7 +3,7 @@ import { useGetProducts, useDeleteProduct, useCreateProduct, useUpdateProduct, u
 import { getGetProductsQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Plus, Search, Edit, Trash2, Image as ImageIcon, Upload, Download, X, FileText, CheckCircle, AlertCircle, AlignLeft } from "lucide-react";
-import { formatPrice } from "@/lib/utils";
+import { useCurrency } from "@/lib/useCurrency";
 import { useTranslation } from "@/lib/i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import { MultiImageUpload } from "@/components/admin/MultiImageUpload";

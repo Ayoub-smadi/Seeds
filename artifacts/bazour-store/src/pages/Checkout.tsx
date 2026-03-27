@@ -5,12 +5,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslation } from "@/lib/i18n";
 import { useCartStore } from "@/lib/store";
-import { formatPrice } from "@/lib/utils";
+import { useCurrency } from "@/lib/useCurrency";
 import { Button } from "@/components/ui/button";
 import { useCreateOrder, useGetShippingZones, useGetCurrentUser } from "@workspace/api-client-react";
 import { CreditCard, Banknote, MapPin, Truck, CheckCircle2 } from "lucide-react";
 
-// Validation schema matching backend schema structure
 const checkoutSchema = z.object({
   shippingAddress: z.object({
     name: z.string().min(2),
@@ -27,6 +26,7 @@ type CheckoutForm = z.infer<typeof checkoutSchema>;
 
 export default function Checkout() {
   const { t, lang } = useTranslation();
+  const { format } = useCurrency();
   const [_, setLocation] = useLocation();
   const { items, getTotal, clearCart } = useCartStore();
   const [orderSuccess, setOrderSuccess] = useState(false);
@@ -162,7 +162,7 @@ export default function Checkout() {
             {/* Shipping Zone */}
             <section className="bg-card p-8 rounded-3xl border border-border shadow-sm">
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <Truck className="text-primary w-6 h-6" /> Shipping Method
+                <Truck className="text-primary w-6 h-6" /> {t('shipping_method')}
               </h2>
               <div className="space-y-4">
                 {shippingZones?.map(zone => (
@@ -171,7 +171,7 @@ export default function Checkout() {
                       <input type="radio" value={zone.id} {...register("shippingZoneId")} className="w-5 h-5 text-primary" />
                       <span className="font-medium">{lang === 'ar' ? zone.nameAr : zone.nameEn}</span>
                     </div>
-                    <span className="font-bold">{formatPrice(zone.price, 'SAR', lang)}</span>
+                    <span className="font-bold">{format(zone.price)}</span>
                   </label>
                 ))}
               </div>
@@ -206,7 +206,7 @@ export default function Checkout() {
         {/* Order Summary */}
         <div className="lg:col-span-5">
           <div className="sticky top-28 bg-card p-8 rounded-3xl border border-border shadow-xl">
-            <h3 className="text-2xl font-bold mb-6">Order Summary</h3>
+            <h3 className="text-2xl font-bold mb-6">{t('order_summary')}</h3>
             
             <div className="space-y-4 mb-6">
               {items.map(item => (
@@ -216,9 +216,9 @@ export default function Checkout() {
                   </div>
                   <div className="flex-1 text-sm">
                     <h4 className="font-medium line-clamp-1">{lang === 'ar' ? item.product.nameAr : item.product.nameEn}</h4>
-                    <p className="text-muted-foreground">Qty: {item.quantity}</p>
+                    <p className="text-muted-foreground">{t('qty')}: {item.quantity}</p>
                     <p className="font-bold text-primary mt-1">
-                      {formatPrice((item.product.salePrice || item.product.price) * item.quantity, 'SAR', lang)}
+                      {format((item.product.salePrice || item.product.price) * item.quantity)}
                     </p>
                   </div>
                 </div>
@@ -228,15 +228,15 @@ export default function Checkout() {
             <div className="border-t border-border pt-6 space-y-3">
               <div className="flex justify-between text-muted-foreground">
                 <span>{t('subtotal')}</span>
-                <span>{formatPrice(getTotal(), 'SAR', lang)}</span>
+                <span>{format(getTotal())}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
-                <span>Shipping</span>
-                <span>{formatPrice(shippingCost, 'SAR', lang)}</span>
+                <span>{t('shipping')}</span>
+                <span>{format(shippingCost)}</span>
               </div>
               <div className="flex justify-between text-2xl font-bold pt-4 border-t border-border mt-4">
-                <span>Total</span>
-                <span className="text-primary">{formatPrice(finalTotal, 'SAR', lang)}</span>
+                <span>{t('total')}</span>
+                <span className="text-primary">{format(finalTotal)}</span>
               </div>
             </div>
 
@@ -246,7 +246,7 @@ export default function Checkout() {
               disabled={isPending}
               className="w-full h-14 text-lg rounded-xl mt-8 shadow-lg shadow-primary/25"
             >
-              {isPending ? "Processing..." : t('order_now')}
+              {isPending ? (lang === 'ar' ? 'جاري المعالجة...' : 'Processing...') : t('order_now')}
             </Button>
           </div>
         </div>

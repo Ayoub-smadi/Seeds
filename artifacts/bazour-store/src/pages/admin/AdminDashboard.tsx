@@ -2,7 +2,7 @@ import { Package, ShoppingCart, Users, TrendingUp, ArrowRight } from "lucide-rea
 import { Link } from "wouter";
 import { useGetProducts, useGetOrders, useGetUsers, useGetCategories } from "@workspace/api-client-react";
 import { useTranslation } from "@/lib/i18n";
-import { formatPrice } from "@/lib/utils";
+import { useCurrency } from "@/lib/useCurrency";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import {
