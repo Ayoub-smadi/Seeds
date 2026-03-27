@@ -7,6 +7,7 @@ import { useCurrency } from "@/lib/useCurrency";
 import { useTranslation } from "@/lib/i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import { MultiImageUpload } from "@/components/admin/MultiImageUpload";
+import { formatPrice } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
