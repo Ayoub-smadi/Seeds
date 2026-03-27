@@ -14,6 +14,10 @@ export default function Products() {
     const params = new URLSearchParams(window.location.search);
     return params.get("q") ?? "";
   });
+  const [onSale, setOnSale] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("onSale") === "true";
+  });
   const [category, setCategory] = useState<string>("");
   const [sort, setSort] = useState<any>("popular");
   const [limit, setLimit] = useState(PAGE_SIZE);
@@ -22,6 +26,7 @@ export default function Products() {
     search: search || undefined,
     categoryId: category || undefined,
     sortBy: sort,
+    onSale: onSale || undefined,
     limit,
   });
 
@@ -38,7 +43,9 @@ export default function Products() {
   useEffect(() => {
     const params = new URLSearchParams(searchString);
     const q = params.get("q") ?? "";
+    const sale = params.get("onSale") === "true";
     setSearch(q);
+    setOnSale(sale);
     setLimit(PAGE_SIZE);
   }, [searchString]);
 

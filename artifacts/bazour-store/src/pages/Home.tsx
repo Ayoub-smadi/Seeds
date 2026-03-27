@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowRight, Leaf, ShieldCheck, Sprout } from "lucide-react";
+import { ArrowRight, Leaf, ShieldCheck, Sprout, Tag } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { useGetProducts, useGetCategories } from "@workspace/api-client-react";
 import { ProductCard } from "@/components/ui/ProductCard";
@@ -62,6 +62,7 @@ export default function Home() {
   const { t, lang } = useTranslation();
   
   const { data: featuredData } = useGetProducts({ limit: 8, sortBy: "popular" });
+  const { data: saleData } = useGetProducts({ limit: 8, onSale: true });
   const { data: categories } = useGetCategories();
 
   return (
@@ -151,6 +152,39 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* Sale Products */}
+      {saleData && saleData.products.length > 0 && (
+        <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-end mb-12">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-3 py-1 rounded-full text-sm font-semibold mb-3">
+                <Tag className="w-3.5 h-3.5" />
+                {lang === 'ar' ? 'عروض حصرية' : 'Exclusive Deals'}
+              </div>
+              <h2 className="text-3xl md:text-4xl font-display font-bold">
+                {lang === 'ar' ? 'منتجات مخفضة' : 'On Sale'}
+              </h2>
+            </div>
+            <Link href="/products?onSale=true" className="hidden sm:inline-flex items-center text-primary font-semibold hover:underline">
+              {lang === 'ar' ? 'عرض الكل' : 'View All'} <ArrowRight className={cn("ms-2 w-4 h-4", lang === 'ar' && "rotate-180")} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+            {saleData.products.map((product, i) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.07 }}
+              >
+                <ProductCard product={product} />
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Featured Products */}
       <section className="py-24 bg-muted/30">

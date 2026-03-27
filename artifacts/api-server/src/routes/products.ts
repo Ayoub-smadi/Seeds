@@ -199,6 +199,60 @@ router.get("/:id/reviews", async (req, res) => {
   }
 });
 
+// GET all reviews (admin only)
+router.get("/reviews/all", requireAdmin, async (req, res) => {
+  try {
+    const reviews = await db.select({
+      id: reviewsTable.id,
+      productId: reviewsTable.productId,
+      userId: reviewsTable.userId,
+      userName: reviewsTable.userName,
+      rating: reviewsTable.rating,
+      comment: reviewsTable.comment,
+      createdAt: reviewsTable.createdAt,
+      productNameAr: productsTable.nameAr,
+      productNameEn: productsTable.nameEn,
+    })
+      .from(reviewsTable)
+      .leftJoin(productsTable, eq(reviewsTable.productId, productsTable.id))
+      .orderBy(desc(reviewsTable.createdAt));
+    res.json({ reviews });
+  } catch (err) {
+    req.log.error({ err }, "Get all reviews error");
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// DELETE a review (admin only)
+router.delete("/reviews/:reviewId", requireAdmin, async (req, res) => {
+  try {
+    const reviewId = req.params["reviewId"]!;
+    const [deleted] = await db.select({ productId: reviewsTable.productId })
+      .from(reviewsTable)
+      .where(eq(reviewsTable.id, reviewId))
+      .limit(1);
+    if (!deleted) {
+      res.status(404).json({ error: "Not Found" });
+      return;
+    }
+    await db.delete(reviewsTable).where(eq(reviewsTable.id, reviewId));
+    // Recalculate product rating and count
+    const [agg] = await db.select({
+      avg: avg(reviewsTable.rating),
+      count: sql<number>`count(*)`,
+    }).from(reviewsTable).where(eq(reviewsTable.productId, deleted.productId));
+    await db.update(productsTable).set({
+      rating: agg?.avg ? String(parseFloat(String(agg.avg)).toFixed(2)) : "0",
+      reviewCount: Number(agg?.count || 0),
+      updatedAt: new Date(),
+    }).where(eq(productsTable.id, deleted.productId));
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "Delete review error");
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 // POST a review (auth required, one per user per product)
 router.post("/:id/reviews", requireAuth, async (req, res) => {
   try {
