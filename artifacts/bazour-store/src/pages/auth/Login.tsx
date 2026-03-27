@@ -40,7 +40,7 @@ export default function Login() {
             <Leaf className="w-8 h-8" />
           </div>
           <h2 className="text-3xl font-display font-bold">{t('sign_in')}</h2>
-          <p className="text-muted-foreground mt-2">Welcome back to Bazour Store</p>
+          <p className="text-muted-foreground mt-2">{t('welcome_back_bazour')}</p>
         </div>
 
         <form onSubmit={handleSubmit((data) => login({ data }))} className="space-y-6">
