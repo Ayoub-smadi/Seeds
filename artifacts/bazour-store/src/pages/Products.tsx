@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearch } from "wouter";
 import { useTranslation } from "@/lib/i18n";
 import { useGetProducts, useGetCategories } from "@workspace/api-client-react";
 import { ProductCard } from "@/components/ui/ProductCard";
@@ -9,7 +10,10 @@ const PAGE_SIZE = 24;
 
 export default function Products() {
   const { t, lang } = useTranslation();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("q") ?? "";
+  });
   const [category, setCategory] = useState<string>("");
   const [sort, setSort] = useState<any>("popular");
   const [limit, setLimit] = useState(PAGE_SIZE);
@@ -28,6 +32,15 @@ export default function Products() {
   const hasMore = shown < total;
 
   const resetLimit = () => setLimit(PAGE_SIZE);
+
+  const searchString = useSearch();
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    const q = params.get("q") ?? "";
+    setSearch(q);
+    setLimit(PAGE_SIZE);
+  }, [searchString]);
 
   const handleSearch = (v: string) => { setSearch(v); resetLimit(); };
   const handleCategory = (v: string) => { setCategory(v); resetLimit(); };
