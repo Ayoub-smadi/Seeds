@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useGetOrders, useUpdateOrderStatus } from "@workspace/api-client-react";
+import { useGetOrders, useUpdateOrderStatus, useGetSettings } from "@workspace/api-client-react";
 import { getGetOrdersQueryKey } from "@workspace/api-client-react";
 import { useCurrency } from "@/lib/useCurrency";
 import { useTranslation } from "@/lib/i18n";
 import { useQueryClient } from "@tanstack/react-query";
-import { Search, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Search, ChevronDown, ChevronUp, Trash2, FileText } from "lucide-react";
+import { cn, formatPrice } from "@/lib/utils";
+import { generateInvoice } from "@/lib/generateInvoice";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
@@ -24,6 +25,7 @@ export default function OrdersAdmin() {
   const { t, lang } = useTranslation();
   const qc = useQueryClient();
   const { data, isLoading } = useGetOrders({ limit: 100 });
+  const { data: settings } = useGetSettings();
   const updateStatus = useUpdateOrderStatus();
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -138,7 +140,7 @@ export default function OrdersAdmin() {
               <th className="px-6 py-4 font-medium">{t('date')}</th>
               <th className="px-6 py-4 font-medium">{t('total')}</th>
               <th className="px-6 py-4 font-medium">{t('status')}</th>
-              <th className="px-6 py-4 font-medium w-12"></th>
+              <th className="px-6 py-4 font-medium w-24"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -173,13 +175,22 @@ export default function OrdersAdmin() {
                     </select>
                   </td>
                   <td className="px-4 py-4" onClick={e => e.stopPropagation()}>
-                    <button
-                      onClick={() => setConfirmDeleteId(order.id)}
-                      className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                      title={t('delete')}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => generateInvoice(order as any, settings as any)}
+                        className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        title={lang === 'ar' ? 'تحميل الفاتورة' : 'Download Invoice'}
+                      >
+                        <FileText className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(order.id)}
+                        className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        title={t('delete')}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
                 {expandedId === order.id && (

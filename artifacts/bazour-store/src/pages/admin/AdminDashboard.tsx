@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { useGetProducts, useGetOrders, useGetUsers, useGetCategories } from "@workspace/api-client-react";
 import { useTranslation } from "@/lib/i18n";
 import { useCurrency } from "@/lib/useCurrency";
-import { cn } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import { useState } from "react";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
