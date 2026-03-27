@@ -45,8 +45,14 @@ function buildOrderConfirmationHtml(data: OrderEmailData): string {
   const formatPrice = (amount: number) =>
     `${amount.toFixed(3)} د.أ`;
 
-  const isAbsoluteUrl = (url?: string) =>
-    !!url && (url.startsWith("http://") || url.startsWith("https://"));
+  const storeUrl = (process.env["STORE_URL"] || "").replace(/\/$/, "");
+
+  const resolveImageUrl = (url?: string): string | undefined => {
+    if (!url) return undefined;
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    if (storeUrl && url.startsWith("/")) return `${storeUrl}${url}`;
+    return undefined;
+  };
 
   const itemRows = items
     .map(
@@ -56,8 +62,8 @@ function buildOrderConfirmationHtml(data: OrderEmailData): string {
           <table cellpadding="0" cellspacing="0" border="0" style="width:100%;">
             <tr>
               <td style="width:88px;vertical-align:middle;padding-left:12px;">
-                ${isAbsoluteUrl(item.productImage)
-                  ? `<img src="${item.productImage}" alt="${item.nameAr}" width="80" height="80" style="display:block;width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid #e5e5e5;" />`
+                ${resolveImageUrl(item.productImage)
+                  ? `<img src="${resolveImageUrl(item.productImage)}" alt="${item.nameAr}" width="80" height="80" style="display:block;width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid #e5e5e5;" />`
                   : `<table cellpadding="0" cellspacing="0" border="0"><tr><td width="80" height="80" align="center" valign="middle" style="background:#f0f7f4;border-radius:10px;font-size:28px;border:1px solid #d4edda;">🌱</td></tr></table>`
                 }
               </td>

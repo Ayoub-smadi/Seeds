@@ -19,7 +19,7 @@ const checkoutSchema = z.object({
     area: z.string().optional(),
     street: z.string().optional(),
   }),
-  customerEmail: z.string().email().optional().or(z.literal("")),
+  customerEmail: z.string().email(),
   shippingZoneId: z.string().min(1),
   paymentMethod: z.enum(['stripe', 'cash_on_delivery']),
 });
@@ -32,7 +32,6 @@ export default function Checkout() {
   const { items, getTotal, clearCart } = useCartStore();
   const [orderSuccess, setOrderSuccess] = useState(false);
   const { data: currentUser } = useGetCurrentUser();
-  const isGuest = !currentUser;
 
   const { data: shippingZones } = useGetShippingZones();
   const { mutate: createOrder, isPending } = useCreateOrder({
@@ -51,7 +50,8 @@ export default function Checkout() {
   const { register, handleSubmit, watch, formState: { errors } } = useForm<CheckoutForm>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
-      paymentMethod: 'cash_on_delivery'
+      paymentMethod: 'cash_on_delivery',
+      customerEmail: currentUser?.email ?? '',
     }
   });
 
@@ -131,23 +131,20 @@ export default function Checkout() {
                   <label className="text-sm font-medium">{lang === 'ar' ? 'الشارع' : 'Street'}</label>
                   <input {...register("shippingAddress.street")} className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0" />
                 </div>
-                {isGuest && (
-                  <div className="space-y-2 sm:col-span-2">
-                    <label className="text-sm font-medium">
-                      {lang === 'ar' ? 'البريد الإلكتروني (لاستلام تأكيد الطلب)' : 'Email (to receive order confirmation)'}
-                      <span className="text-muted-foreground text-xs ms-1">{lang === 'ar' ? '— اختياري' : '— optional'}</span>
-                    </label>
-                    <input
-                      {...register("customerEmail")}
-                      type="email"
-                      placeholder={lang === 'ar' ? 'example@email.com' : 'example@email.com'}
-                      className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0"
-                    />
-                    {errors.customerEmail && (
-                      <p className="text-xs text-destructive">{lang === 'ar' ? 'بريد إلكتروني غير صحيح' : 'Invalid email address'}</p>
-                    )}
-                  </div>
-                )}
+                <div className="space-y-2 sm:col-span-2">
+                  <label className="text-sm font-medium">
+                    {lang === 'ar' ? 'البريد الإلكتروني (لاستلام تأكيد الطلب)' : 'Email (to receive order confirmation)'}
+                  </label>
+                  <input
+                    {...register("customerEmail")}
+                    type="email"
+                    placeholder={lang === 'ar' ? 'example@email.com' : 'example@email.com'}
+                    className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0"
+                  />
+                  {errors.customerEmail && (
+                    <p className="text-xs text-destructive">{lang === 'ar' ? 'البريد الإلكتروني مطلوب ويجب أن يكون صحيحاً' : 'A valid email address is required'}</p>
+                  )}
+                </div>
               </div>
             </section>
 

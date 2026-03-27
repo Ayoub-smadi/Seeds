@@ -17,7 +17,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function Register() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [_, setLocation] = useLocation();
   
   const { mutate: registerUser, isPending, error } = useRegisterUser({
@@ -42,7 +42,7 @@ export default function Register() {
             <Sprout className="w-8 h-8" />
           </div>
           <h2 className="text-3xl font-display font-bold">{t('create_account')}</h2>
-          <p className="text-muted-foreground mt-2">Join our botanical community</p>
+          <p className="text-muted-foreground mt-2">{lang === 'ar' ? 'انضم إلى مجتمعنا النباتي' : 'Join our botanical community'}</p>
         </div>
 
         <form onSubmit={handleSubmit((data) => registerUser({ data }))} className="space-y-5">
