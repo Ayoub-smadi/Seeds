@@ -45,7 +45,11 @@ function buildOrderConfirmationHtml(data: OrderEmailData): string {
   const formatPrice = (amount: number) =>
     `${amount.toFixed(3)} د.أ`;
 
-  const storeUrl = (process.env["STORE_URL"] || "").replace(/\/$/, "");
+  const replitDomain = process.env["REPLIT_DEV_DOMAIN"];
+  const storeUrl = (
+    process.env["STORE_URL"] ||
+    (replitDomain ? `https://${replitDomain}` : "")
+  ).replace(/\/$/, "");
 
   const resolveImageUrl = (url?: string): string | undefined => {
     if (!url) return undefined;
