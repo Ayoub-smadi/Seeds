@@ -30,23 +30,26 @@ function CategoryPieChart() {
   const { lang } = useTranslation();
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
 
-  const mainCat = cats?.find(c => c.slug === "budhour-ziraiya");
-  const subs = (mainCat as any)?.subcategories ?? [];
-  if (!subs.length) return null;
-
-  const pieData = subs
-    .filter((c: any) => c.productCount > 0)
-    .map((c: any) => ({
-      name: lang === "ar" ? c.nameAr : c.nameEn,
-      value: c.productCount,
-    }));
+  const pieData = (cats ?? [])
+    .filter((c) => !c.parentId)
+    .map((c) => {
+      const subsTotal = ((c as any).subcategories ?? []).reduce(
+        (s: number, sub: any) => s + (sub.productCount ?? 0), 0
+      );
+      return {
+        name: lang === "ar" ? c.nameAr : c.nameEn,
+        value: (c.productCount ?? 0) + subsTotal,
+      };
+    })
+    .filter((c) => c.value > 0);
 
   const total = pieData.reduce((s: number, d: any) => s + d.value, 0);
+  if (!pieData.length) return null;
 
   return (
     <div className="bg-card rounded-3xl border border-border shadow-sm p-6">
-      <h2 className="text-xl font-bold mb-1">🌱 توزيع منتجات بذور زراعية</h2>
-      <p className="text-muted-foreground text-sm mb-4">إجمالي {total} منتج</p>
+      <h2 className="text-xl font-bold mb-1">📊 توزيع المنتجات حسب الأقسام الرئيسية</h2>
+      <p className="text-muted-foreground text-sm mb-4">إجمالي {total} منتج في {pieData.length} قسم رئيسي</p>
       <div className="flex flex-col md:flex-row items-center gap-6">
         <div className="w-full md:w-56 h-56 flex-shrink-0">
           <ResponsiveContainer width="100%" height="100%">
