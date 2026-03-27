@@ -59,8 +59,6 @@ const statusLabel: Record<string, { ar: string; en: string }> = {
 
 const paymentLabel: Record<string, { ar: string; en: string }> = {
   cash_on_delivery: { ar: 'الدفع عند الاستلام', en: 'Cash on Delivery' },
-  stripe:           { ar: 'بطاقة ائتمان', en: 'Credit Card' },
-  card:             { ar: 'بطاقة ائتمان', en: 'Credit Card' },
 };
 
 export function generateInvoice(order: InvoiceOrder, settings?: StoreSettings) {
@@ -99,9 +97,20 @@ export function generateInvoice(order: InvoiceOrder, settings?: StoreSettings) {
   const statusAr = statusLabel[order.status || '']?.ar || order.status || '—';
   const paymentAr = paymentLabel[order.paymentMethod || '']?.ar || order.paymentMethod || '—';
 
+  const svgLogo = `<svg width="52" height="52" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+    <circle cx="24" cy="24" r="23" fill="rgba(255,255,255,0.15)" />
+    <path d="M24 38 C24 38 24 24 24 18" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    <path d="M24 26 C20 26 13 22 14 14 C14 14 22 14 24 22" fill="white" opacity="0.85"/>
+    <path d="M24 22 C28 22 35 18 34 10 C34 10 26 10 24 18" fill="white"/>
+    <ellipse cx="24" cy="38" rx="5" ry="2.5" fill="white" opacity="0.2"/>
+    <circle cx="19" cy="38" r="2" fill="white" opacity="0.4"/>
+    <circle cx="29" cy="38" r="2" fill="white" opacity="0.4"/>
+    <circle cx="24" cy="40" r="1.5" fill="white" opacity="0.3"/>
+  </svg>`;
+
   const logoHtml = logoUrl
-    ? `<img src="${logoUrl}" alt="logo" style="height:60px;object-fit:contain;" />`
-    : `<div class="logo-text">${storeName}</div>`;
+    ? `<div style="display:flex;align-items:center;gap:12px;">${svgLogo}<img src="${logoUrl}" alt="logo" style="height:52px;object-fit:contain;" /></div>`
+    : `<div style="display:flex;align-items:center;gap:12px;">${svgLogo}<div style="display:flex;flex-direction:column;line-height:1.1;"><span style="font-size:28px;font-weight:900;color:#fff;">${storeName}</span><span style="font-size:11px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.75);">${storeNameEn}</span></div></div>`;
 
   const html = `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
