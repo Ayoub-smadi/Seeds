@@ -7,7 +7,7 @@ import { useTranslation } from "@/lib/i18n";
 import { useCartStore } from "@/lib/store";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { useCreateOrder, useGetShippingZones, useGetCurrentUser } from "@workspace/api-client-react";
+import { useCreateOrder, useGetShippingZones } from "@workspace/api-client-react";
 import { CreditCard, Banknote, MapPin, Truck, CheckCircle2 } from "lucide-react";
 
 // Validation schema matching backend schema structure
@@ -16,10 +16,9 @@ const checkoutSchema = z.object({
     name: z.string().min(2),
     phone: z.string().min(8),
     city: z.string().min(2),
-    area: z.string().optional(),
-    street: z.string().optional(),
+    area: z.string().min(2),
+    street: z.string().min(2),
   }),
-  customerEmail: z.string().email(),
   shippingZoneId: z.string().min(1),
   paymentMethod: z.enum(['stripe', 'cash_on_delivery']),
 });
@@ -31,8 +30,6 @@ export default function Checkout() {
   const [_, setLocation] = useLocation();
   const { items, getTotal, clearCart } = useCartStore();
   const [orderSuccess, setOrderSuccess] = useState(false);
-  const { data: currentUser } = useGetCurrentUser();
-
   const { data: shippingZones } = useGetShippingZones();
   const { mutate: createOrder, isPending } = useCreateOrder({
     mutation: {
@@ -51,7 +48,6 @@ export default function Checkout() {
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
       paymentMethod: 'cash_on_delivery',
-      customerEmail: currentUser?.email ?? '',
     }
   });
 
@@ -95,9 +91,7 @@ export default function Checkout() {
       quantity: item.quantity,
       price: item.product.salePrice || item.product.price,
     }));
-    const payload: any = { ...data, cartItems };
-    if (data.customerEmail) payload.customerEmail = data.customerEmail;
-    createOrder({ data: payload });
+    createOrder({ data: { ...data, cartItems } });
   };
 
   return (
@@ -116,33 +110,38 @@ export default function Checkout() {
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('name')}</label>
+                  <label className="text-sm font-medium">{t('name')} <span className="text-destructive">*</span></label>
                   <input {...register("shippingAddress.name")} className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0" />
+                  {errors.shippingAddress?.name && (
+                    <p className="text-xs text-destructive">{lang === 'ar' ? 'الاسم مطلوب' : 'Name is required'}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('phone')}</label>
+                  <label className="text-sm font-medium">{t('phone')} <span className="text-destructive">*</span></label>
                   <input {...register("shippingAddress.phone")} className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0" />
+                  {errors.shippingAddress?.phone && (
+                    <p className="text-xs text-destructive">{lang === 'ar' ? 'رقم الهاتف مطلوب' : 'Phone is required'}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{lang === 'ar' ? 'المدينة' : 'City'}</label>
+                  <label className="text-sm font-medium">{lang === 'ar' ? 'المدينة' : 'City'} <span className="text-destructive">*</span></label>
                   <input {...register("shippingAddress.city")} className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0" />
+                  {errors.shippingAddress?.city && (
+                    <p className="text-xs text-destructive">{lang === 'ar' ? 'المدينة مطلوبة' : 'City is required'}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{lang === 'ar' ? 'الشارع' : 'Street'}</label>
-                  <input {...register("shippingAddress.street")} className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0" />
+                  <label className="text-sm font-medium">{lang === 'ar' ? 'المنطقة' : 'Area'} <span className="text-destructive">*</span></label>
+                  <input {...register("shippingAddress.area")} className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0" />
+                  {errors.shippingAddress?.area && (
+                    <p className="text-xs text-destructive">{lang === 'ar' ? 'المنطقة مطلوبة' : 'Area is required'}</p>
+                  )}
                 </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <label className="text-sm font-medium">
-                    {lang === 'ar' ? 'البريد الإلكتروني (لاستلام تأكيد الطلب)' : 'Email (to receive order confirmation)'}
-                  </label>
-                  <input
-                    {...register("customerEmail")}
-                    type="email"
-                    placeholder={lang === 'ar' ? 'example@email.com' : 'example@email.com'}
-                    className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0"
-                  />
-                  {errors.customerEmail && (
-                    <p className="text-xs text-destructive">{lang === 'ar' ? 'البريد الإلكتروني مطلوب ويجب أن يكون صحيحاً' : 'A valid email address is required'}</p>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{lang === 'ar' ? 'الشارع' : 'Street'} <span className="text-destructive">*</span></label>
+                  <input {...register("shippingAddress.street")} className="w-full h-12 px-4 rounded-xl border-2 border-border focus:border-primary focus:ring-0" />
+                  {errors.shippingAddress?.street && (
+                    <p className="text-xs text-destructive">{lang === 'ar' ? 'الشارع مطلوب' : 'Street is required'}</p>
                   )}
                 </div>
               </div>
