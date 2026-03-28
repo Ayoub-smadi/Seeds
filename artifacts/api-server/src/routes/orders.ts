@@ -114,8 +114,11 @@ router.post("/", optionalAuth, async (req, res) => {
 
     const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
+    const FREE_SHIPPING_THRESHOLD = 80;
+    const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
+
     let shippingCost = 0;
-    if (shippingZoneId) {
+    if (!isFreeShipping && shippingZoneId) {
       const [zone] = await db.select().from(shippingZonesTable).where(eq(shippingZonesTable.id, shippingZoneId)).limit(1);
       if (zone) shippingCost = parseFloat(String(zone.price));
     }

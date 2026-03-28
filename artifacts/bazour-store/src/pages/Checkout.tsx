@@ -59,10 +59,14 @@ export default function Checkout() {
     }
   });
 
+  const FREE_SHIPPING_THRESHOLD = 80;
+  const subtotal = getTotal();
+  const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
+
   const selectedZoneId = watch('shippingZoneId');
   const selectedZone = shippingZones?.find(z => z.id === selectedZoneId);
-  const shippingCost = selectedZone?.price || 0;
-  const finalTotal = getTotal() + shippingCost;
+  const shippingCost = isFreeShipping ? 0 : (selectedZone?.price || 0);
+  const finalTotal = subtotal + shippingCost;
 
   if (isAuthLoading || !currentUser) {
     return <div className="min-h-[70vh] flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
@@ -164,6 +168,12 @@ export default function Checkout() {
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                 <Truck className="text-primary w-6 h-6" /> {t('shipping_method')}
               </h2>
+              {isFreeShipping && (
+                <div className="mb-4 flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm font-medium">
+                  <span>🎉</span>
+                  <span>{lang === 'ar' ? 'مبروك! تستمتع بتوصيل مجاني لطلبك' : 'Congratulations! You qualify for free shipping'}</span>
+                </div>
+              )}
               <div className="space-y-4">
                 {shippingZones?.map(zone => (
                   <label key={zone.id} className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${selectedZoneId === zone.id ? 'border-primary bg-primary/5' : 'border-border'}`}>
@@ -171,7 +181,11 @@ export default function Checkout() {
                       <input type="radio" value={zone.id} {...register("shippingZoneId")} className="w-5 h-5 text-primary" />
                       <span className="font-medium">{lang === 'ar' ? zone.nameAr : zone.nameEn}</span>
                     </div>
-                    <span className="font-bold">{format(zone.price)}</span>
+                    {isFreeShipping ? (
+                      <span className="font-bold text-green-600">{lang === 'ar' ? 'مجاني' : 'Free'}</span>
+                    ) : (
+                      <span className="font-bold">{format(zone.price)}</span>
+                    )}
                   </label>
                 ))}
               </div>
@@ -232,7 +246,11 @@ export default function Checkout() {
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>{t('shipping')}</span>
-                <span>{format(shippingCost)}</span>
+                {isFreeShipping ? (
+                  <span className="font-semibold text-green-600">{lang === 'ar' ? 'مجاني' : 'Free'}</span>
+                ) : (
+                  <span>{format(shippingCost)}</span>
+                )}
               </div>
               <div className="flex justify-between text-2xl font-bold pt-4 border-t border-border mt-4">
                 <span>{t('total')}</span>
