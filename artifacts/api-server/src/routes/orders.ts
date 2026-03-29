@@ -5,7 +5,7 @@ import { eq, desc, sql } from "drizzle-orm";
 import { requireAuth, requireAdmin, optionalAuth } from "../lib/auth";
 import type { JwtPayload } from "../lib/auth";
 import { sendOrderConfirmedSms, sendOrderShippedSms } from "../lib/sms";
-import { sendOrderConfirmationEmail, sendOrderCancelledEmail } from "../lib/email";
+import { sendOrderConfirmationEmail, sendOrderCancelledEmail, sendAdminNewOrderEmail } from "../lib/email";
 
 const router = Router();
 
@@ -187,25 +187,37 @@ router.post("/", optionalAuth, async (req, res) => {
       paymentMethod,
     };
 
+    let resolvedCustomerName = shippingAddress?.name || "عزيزي العميل";
+    let resolvedCustomerEmail: string | undefined = customerEmail;
+
     if (userId) {
       const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+      if (user?.name) resolvedCustomerName = user.name;
+      if (user?.email) resolvedCustomerEmail = user.email;
       if (user?.phone) {
         await sendOrderConfirmedSms(user.phone, order.orderNumber);
       }
       if (user?.email) {
         await sendOrderConfirmationEmail({
-          customerName: user.name || shippingAddress?.name || "عزيزي العميل",
+          customerName: resolvedCustomerName,
           customerEmail: user.email,
           ...emailPayload,
         });
       }
     } else if (customerEmail) {
       await sendOrderConfirmationEmail({
-        customerName: shippingAddress?.name || "عزيزي العميل",
+        customerName: resolvedCustomerName,
         customerEmail,
         ...emailPayload,
       });
     }
+
+    // Notify admin of new order
+    await sendAdminNewOrderEmail({
+      customerName: resolvedCustomerName,
+      customerEmail: resolvedCustomerEmail,
+      ...emailPayload,
+    });
 
     res.status(201).json({
       order: { ...order, subtotal: parseFloat(String(order.subtotal)), total: parseFloat(String(order.total)) },

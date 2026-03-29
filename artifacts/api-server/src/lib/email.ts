@@ -340,6 +340,115 @@ export async function sendOrderCancelledEmail(data: OrderCancelledEmailData): Pr
   }
 }
 
+function buildAdminNewOrderHtml(data: OrderEmailData): string {
+  const { customerName, customerEmail, orderNumber, items, subtotal, shippingCost, discount, total, shippingAddress, paymentMethod } = data;
+
+  const formatPrice = (amount: number) => `${amount.toFixed(3)} د.أ`;
+
+  const paymentLabels: Record<string, string> = {
+    cash_on_delivery: "الدفع عند الاستلام",
+    stripe: "بطاقة ائتمانية",
+  };
+
+  const itemRows = items.map((item) => `
+    <tr>
+      <td style="padding:10px 14px;border-bottom:1px solid #f0f0f0;font-size:14px;color:#1a1a1a;">${item.nameAr} <span style="color:#888;font-size:12px;">(${item.nameEn})</span></td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f0f0f0;text-align:center;font-size:14px;color:#555;">${item.quantity}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f0f0f0;text-align:right;font-size:14px;color:#2d6a4f;font-weight:700;">${formatPrice(item.price * item.quantity)}</td>
+    </tr>`).join("");
+
+  return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>طلب جديد - بذور</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4f0;font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;">
+  <div style="max-width:620px;margin:40px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+    <div style="background:linear-gradient(135deg,#1a3a2a 0%,#2d6a4f 100%);padding:32px;text-align:center;">
+      <div style="font-size:32px;margin-bottom:6px;">🛒</div>
+      <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">طلب جديد وصلك!</h1>
+      <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px;">بذور Seeds Store — لوحة تحكم الأدمن</p>
+    </div>
+
+    <div style="padding:24px 28px 0;">
+      <div style="background:#f0f7f4;border:1px solid #d4edda;border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:12px;color:#888;margin-bottom:3px;">رقم الطلب</div>
+          <div style="font-size:18px;font-weight:700;color:#2d6a4f;font-family:monospace;">${orderNumber}</div>
+        </div>
+        <div style="background:#2d6a4f;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;">
+          🆕 جديد
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:20px 28px;">
+      <h3 style="margin:0 0 12px;color:#1a1a1a;font-size:15px;font-weight:700;">معلومات العميل</h3>
+      <div style="background:#fafafa;border:1px solid #e5e5e5;border-radius:10px;padding:16px;line-height:2;font-size:14px;">
+        <div><strong>الاسم:</strong> ${customerName}</div>
+        ${customerEmail ? `<div><strong>الإيميل:</strong> ${customerEmail}</div>` : ""}
+        ${shippingAddress?.phone ? `<div><strong>الهاتف:</strong> ${shippingAddress.phone}</div>` : ""}
+        ${shippingAddress?.address ? `<div><strong>العنوان:</strong> ${shippingAddress.address}</div>` : ""}
+        ${shippingAddress?.city ? `<div><strong>المدينة:</strong> ${shippingAddress.city}</div>` : ""}
+        ${paymentMethod ? `<div><strong>طريقة الدفع:</strong> ${paymentLabels[paymentMethod] || paymentMethod}</div>` : ""}
+      </div>
+    </div>
+
+    <div style="padding:0 28px 20px;">
+      <h3 style="margin:0 0 12px;color:#1a1a1a;font-size:15px;font-weight:700;">المنتجات المطلوبة</h3>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #e5e5e5;border-radius:10px;overflow:hidden;">
+        <thead>
+          <tr style="background:#f8f8f8;">
+            <th style="padding:10px 14px;text-align:right;font-size:12px;color:#666;font-weight:600;border-bottom:2px solid #e5e5e5;">المنتج</th>
+            <th style="padding:10px 14px;text-align:center;font-size:12px;color:#666;font-weight:600;border-bottom:2px solid #e5e5e5;">الكمية</th>
+            <th style="padding:10px 14px;text-align:right;font-size:12px;color:#666;font-weight:600;border-bottom:2px solid #e5e5e5;">الإجمالي</th>
+          </tr>
+        </thead>
+        <tbody>${itemRows}</tbody>
+      </table>
+    </div>
+
+    <div style="padding:0 28px 24px;">
+      <div style="background:#fafafa;border:1px solid #e5e5e5;border-radius:10px;padding:16px;">
+        ${shippingCost > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px;"><span style="color:#555;">المجموع الفرعي</span><span>${formatPrice(subtotal)}</span></div><div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px;"><span style="color:#555;">رسوم الشحن</span><span>${formatPrice(shippingCost)}</span></div>` : ""}
+        ${discount > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px;"><span style="color:#555;">الخصم</span><span style="color:#e74c3c;">- ${formatPrice(discount)}</span></div>` : ""}
+        <div style="border-top:2px solid #e5e5e5;margin:10px 0;"></div>
+        <div style="display:flex;justify-content:space-between;font-size:17px;font-weight:700;"><span style="color:#1a1a1a;">المجموع الكلي</span><span style="color:#2d6a4f;">${formatPrice(total)}</span></div>
+      </div>
+    </div>
+
+    <div style="background:#f8f8f8;border-top:1px solid #e5e5e5;padding:18px 28px;text-align:center;">
+      <p style="margin:0;color:#aaa;font-size:12px;">© ${new Date().getFullYear()} بذور Seeds Store — إشعار تلقائي للأدمن</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+export async function sendAdminNewOrderEmail(data: OrderEmailData): Promise<boolean> {
+  const adminEmail = process.env["ADMIN_NOTIFICATION_EMAIL"] || process.env["ADMIN_EMAIL"] || process.env["SMTP_USER"];
+  if (!process.env["SMTP_USER"] || !process.env["SMTP_PASS"] || !adminEmail) {
+    return false;
+  }
+
+  try {
+    const fromName = process.env["SMTP_FROM_NAME"] || "بذور Seeds Store";
+    await transporter.sendMail({
+      from: `"${fromName}" <${process.env["SMTP_USER"]}>`,
+      to: adminEmail,
+      subject: `🛒 طلب جديد #${data.orderNumber} من ${data.customerName} — بذور`,
+      html: buildAdminNewOrderHtml(data),
+    });
+    return true;
+  } catch (err) {
+    console.error("[Email] Failed to send admin new order email:", err);
+    return false;
+  }
+}
+
 export async function sendOrderConfirmationEmail(data: OrderEmailData): Promise<boolean> {
   if (!process.env["SMTP_USER"] || !process.env["SMTP_PASS"]) {
     return false;
