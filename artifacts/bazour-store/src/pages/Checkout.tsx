@@ -8,7 +8,7 @@ import { useCartStore } from "@/lib/store";
 import { useCurrency } from "@/lib/useCurrency";
 import { Button } from "@/components/ui/button";
 import { useCreateOrder, useGetShippingZones, useGetCurrentUser } from "@workspace/api-client-react";
-import { CreditCard, Banknote, MapPin, Truck, CheckCircle2 } from "lucide-react";
+import { Banknote, MapPin, Truck, CheckCircle2 } from "lucide-react";
 
 const checkoutSchema = z.object({
   shippingAddress: z.object({
@@ -19,7 +19,7 @@ const checkoutSchema = z.object({
     street: z.string().min(2),
   }),
   shippingZoneId: z.string().min(1),
-  paymentMethod: z.enum(['stripe', 'cash_on_delivery']),
+  paymentMethod: z.enum(['cash_on_delivery']),
 });
 
 type CheckoutForm = z.infer<typeof checkoutSchema>;
@@ -194,23 +194,15 @@ export default function Checkout() {
             {/* Payment Method */}
             <section className="bg-card p-8 rounded-3xl border border-border shadow-sm">
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <CreditCard className="text-primary w-6 h-6" /> {t('payment_method')}
+                <Banknote className="text-primary w-6 h-6" /> {t('payment_method')}
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <label className={`flex flex-col p-6 border-2 rounded-xl cursor-pointer transition-all ${watch('paymentMethod') === 'cash_on_delivery' ? 'border-primary bg-primary/5' : 'border-border'}`}>
                   <div className="flex justify-between items-center mb-4">
                     <Banknote className="w-8 h-8 text-primary" />
                     <input type="radio" value="cash_on_delivery" {...register("paymentMethod")} className="w-5 h-5 text-primary" />
                   </div>
                   <span className="font-bold text-lg">{t('cash_on_delivery')}</span>
-                </label>
-                
-                <label className={`flex flex-col p-6 border-2 rounded-xl cursor-pointer transition-all ${watch('paymentMethod') === 'stripe' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                  <div className="flex justify-between items-center mb-4">
-                    <CreditCard className="w-8 h-8 text-primary" />
-                    <input type="radio" value="stripe" {...register("paymentMethod")} className="w-5 h-5 text-primary" />
-                  </div>
-                  <span className="font-bold text-lg">{t('credit_card')}</span>
                 </label>
               </div>
             </section>
