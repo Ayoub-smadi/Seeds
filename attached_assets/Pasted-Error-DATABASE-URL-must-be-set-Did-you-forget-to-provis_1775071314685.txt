@@ -1,0 +1,84 @@
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at <anonymous> (/app/lib/db/src/index.ts:8:9)
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+Node.js v22.11.0
+/app/lib/db/src/index.ts:8
+  throw new Error(
+        ^
+Node.js v22.11.0
+    at <anonymous> (/app/lib/db/src/index.ts:8:9)
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+        ^
+/app/lib/db/src/index.ts:8
+  throw new Error(
+Node.js v22.11.0
+    at <anonymous> (/app/lib/db/src/index.ts:8:9)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+/app/lib/db/src/index.ts:8
+  throw new Error(
+        ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+/app/lib/db/src/index.ts:8
+  throw new Error(
+        ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at <anonymous> (/app/lib/db/src/index.ts:8:9)
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+Node.js v22.11.0
+/app/lib/db/src/index.ts:8
+  throw new Error(
+        ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at <anonymous> (/app/lib/db/src/index.ts:8:9)
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+Node.js v22.11.0
+/app/lib/db/src/index.ts:8
+  throw new Error(
+        ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at <anonymous> (/app/lib/db/src/index.ts:8:9)
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+Node.js v22.11.0
+Node.js v22.11.0
+/app/lib/db/src/index.ts:8
+  throw new Error(
+        ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at <anonymous> (/app/lib/db/src/index.ts:8:9)
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+/app/lib/db/src/index.ts:8
+  throw new Error(
+        ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at <anonymous> (/app/lib/db/src/index.ts:8:9)
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+Node.js v22.11.0
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at <anonymous> (/app/lib/db/src/index.ts:8:9)
+    at ModuleJob.run (node:internal/modules/esm/module_job:268:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+Node.js v22.11.0
+/app/lib/db/src/index.ts:8
+  throw new Error(
+        ^
+/app/lib/db/src/index.ts:8
+  throw new Error(
+        ^
