@@ -8,6 +8,7 @@ import { useTranslation } from "@/lib/i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import { MultiImageUpload } from "@/components/admin/MultiImageUpload";
 import { formatPrice } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
@@ -52,6 +53,7 @@ export default function ProductsAdmin() {
   const updateMut = useUpdateProduct();
 
   const [search, setSearch] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [modal, setModal] = useState<null | { mode: 'add' | 'edit'; id?: string; form: FormData }>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
@@ -123,6 +125,34 @@ export default function ProductsAdmin() {
       onSuccess: () => { invalidate(); showToast(t('deleted_successfully')); },
       onError: () => showToast(t('error_generic'), false),
     });
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(p => p.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    for (const id of ids) {
+      await new Promise<void>(resolve => {
+        deleteMut.mutate({ id }, { onSuccess: () => resolve(), onError: () => resolve() });
+      });
+    }
+    setSelectedIds(new Set());
+    invalidate();
+    showToast(lang === 'ar' ? `تم حذف ${ids.length} منتج` : `Deleted ${ids.length} products`);
   };
 
   const handleImport = async () => {
@@ -232,11 +262,28 @@ export default function ProductsAdmin() {
               className="w-full pl-9 pr-4 py-2 rtl:pr-9 rtl:pl-4 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
             />
           </div>
+          {selectedIds.size > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="rounded-xl gap-2 shrink-0"
+              onClick={handleBulkDelete}
+            >
+              <Trash2 className="w-4 h-4" />
+              {lang === 'ar' ? `حذف ${selectedIds.size} منتج` : `Delete ${selectedIds.size} selected`}
+            </Button>
+          )}
         </div>
 
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-muted/50 text-muted-foreground text-sm border-b border-border">
+              <th className="px-4 py-4 w-10">
+                <Checkbox
+                  checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                  onCheckedChange={toggleSelectAll}
+                />
+              </th>
               <th className="px-6 py-4 font-medium">{lang === 'ar' ? 'المنتج' : 'Product'}</th>
               <th className="px-6 py-4 font-medium">{t('price')}</th>
               <th className="px-6 py-4 font-medium">{t('stock')}</th>
@@ -246,11 +293,17 @@ export default function ProductsAdmin() {
           </thead>
           <tbody className="divide-y divide-border">
             {isLoading ? (
-              <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</td></tr>
+              <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</td></tr>
             ) : !filtered.length ? (
-              <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">{t('no_products')}</td></tr>
+              <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">{t('no_products')}</td></tr>
             ) : filtered.map((product) => (
-              <tr key={product.id} className="hover:bg-muted/30 transition-colors">
+              <tr key={product.id} className={`hover:bg-muted/30 transition-colors ${selectedIds.has(product.id) ? 'bg-destructive/5' : ''}`}>
+                <td className="px-4 py-4 w-10">
+                  <Checkbox
+                    checked={selectedIds.has(product.id)}
+                    onCheckedChange={() => toggleSelect(product.id)}
+                  />
+                </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
