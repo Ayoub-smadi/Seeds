@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 const transporter = nodemailer.createTransport({
   host: process.env["SMTP_HOST"] || "smtp.gmail.com",
@@ -13,6 +14,16 @@ const transporter = nodemailer.createTransport({
   },
   family: 4,
 } as any);
+
+const resend = process.env["RESEND_API_KEY"] ? new Resend(process.env["RESEND_API_KEY"]) : null;
+
+async function sendEmail({ from, to, subject, html }: { from: string; to: string; subject: string; html: string }) {
+  if (resend) {
+    await resend.emails.send({ from, to, subject, html });
+  } else {
+    await transporter.sendMail({ from, to, subject, html });
+  }
+}
 
 export interface OrderEmailItem {
   nameAr: string;
@@ -431,14 +442,15 @@ function buildAdminNewOrderHtml(data: OrderEmailData): string {
 
 export async function sendAdminNewOrderEmail(data: OrderEmailData): Promise<boolean> {
   const adminEmail = process.env["ADMIN_NOTIFICATION_EMAIL"] || process.env["ADMIN_EMAIL"] || process.env["SMTP_USER"];
-  if (!process.env["SMTP_USER"] || !process.env["SMTP_PASS"] || !adminEmail) {
-    return false;
-  }
+  const hasResend = !!process.env["RESEND_API_KEY"];
+  const hasSmtp = !!(process.env["SMTP_USER"] && process.env["SMTP_PASS"]);
+  if ((!hasResend && !hasSmtp) || !adminEmail) return false;
 
   try {
     const fromName = process.env["SMTP_FROM_NAME"] || "بذور Seeds Store";
-    await transporter.sendMail({
-      from: `"${fromName}" <${process.env["SMTP_USER"]}>`,
+    const fromEmail = process.env["SMTP_USER"] || "noreply@seedsstore.online";
+    await sendEmail({
+      from: `${fromName} <${fromEmail}>`,
       to: adminEmail,
       subject: `🛒 طلب جديد #${data.orderNumber} من ${data.customerName} — بذور`,
       html: buildAdminNewOrderHtml(data),
@@ -451,18 +463,16 @@ export async function sendAdminNewOrderEmail(data: OrderEmailData): Promise<bool
 }
 
 export async function sendOrderConfirmationEmail(data: OrderEmailData): Promise<boolean> {
-  if (!process.env["SMTP_USER"] || !process.env["SMTP_PASS"]) {
-    return false;
-  }
-
-  if (!data.customerEmail) {
-    return false;
-  }
+  const hasResend = !!process.env["RESEND_API_KEY"];
+  const hasSmtp = !!(process.env["SMTP_USER"] && process.env["SMTP_PASS"]);
+  if (!hasResend && !hasSmtp) return false;
+  if (!data.customerEmail) return false;
 
   try {
     const fromName = process.env["SMTP_FROM_NAME"] || "بذور Seeds Store";
-    await transporter.sendMail({
-      from: `"${fromName}" <${process.env["SMTP_USER"]}>`,
+    const fromEmail = process.env["SMTP_USER"] || "noreply@seedsstore.online";
+    await sendEmail({
+      from: `${fromName} <${fromEmail}>`,
       to: data.customerEmail,
       subject: `✅ تأكيد طلبك #${data.orderNumber} - بذور Seeds Store`,
       html: buildOrderConfirmationHtml(data),
