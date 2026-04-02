@@ -187,42 +187,49 @@ router.post("/", optionalAuth, async (req, res) => {
       paymentMethod,
     };
 
-    let resolvedCustomerName = shippingAddress?.name || "عزيزي العميل";
-    let resolvedCustomerEmail: string | undefined = customerEmail;
-
-    if (userId) {
-      const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-      if (user?.name) resolvedCustomerName = user.name;
-      if (user?.email) resolvedCustomerEmail = user.email;
-      if (user?.phone) {
-        await sendOrderConfirmedSms(user.phone, order.orderNumber);
-      }
-      if (user?.email) {
-        await sendOrderConfirmationEmail({
-          customerName: resolvedCustomerName,
-          customerEmail: user.email,
-          ...emailPayload,
-        });
-      }
-    } else if (customerEmail) {
-      await sendOrderConfirmationEmail({
-        customerName: resolvedCustomerName,
-        customerEmail,
-        ...emailPayload,
-      });
-    }
-
-    // Notify admin of new order
-    await sendAdminNewOrderEmail({
-      customerName: resolvedCustomerName,
-      customerEmail: resolvedCustomerEmail,
-      ...emailPayload,
-    });
-
+    // Send response immediately — don't block on email/SMS
     res.status(201).json({
       order: { ...order, subtotal: parseFloat(String(order.subtotal)), total: parseFloat(String(order.total)) },
       clientSecret,
     });
+
+    // Send notifications in background (fire-and-forget)
+    (async () => {
+      try {
+        let resolvedCustomerName = shippingAddress?.name || "عزيزي العميل";
+        let resolvedCustomerEmail: string | undefined = customerEmail;
+
+        if (userId) {
+          const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+          if (user?.name) resolvedCustomerName = user.name;
+          if (user?.email) resolvedCustomerEmail = user.email;
+          if (user?.phone) {
+            await sendOrderConfirmedSms(user.phone, order.orderNumber).catch(() => {});
+          }
+          if (user?.email) {
+            await sendOrderConfirmationEmail({
+              customerName: resolvedCustomerName,
+              customerEmail: user.email,
+              ...emailPayload,
+            }).catch(() => {});
+          }
+        } else if (customerEmail) {
+          await sendOrderConfirmationEmail({
+            customerName: resolvedCustomerName,
+            customerEmail,
+            ...emailPayload,
+          }).catch(() => {});
+        }
+
+        await sendAdminNewOrderEmail({
+          customerName: resolvedCustomerName,
+          customerEmail: resolvedCustomerEmail,
+          ...emailPayload,
+        }).catch(() => {});
+      } catch {
+        // Notification errors are non-fatal
+      }
+    })();
   } catch (err) {
     req.log.error({ err }, "Create order error");
     res.status(500).json({ error: "Internal Server Error" });
