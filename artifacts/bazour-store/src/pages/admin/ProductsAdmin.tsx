@@ -119,7 +119,6 @@ export default function ProductsAdmin() {
   };
 
   const handleDelete = (id: string) => {
-    if (!confirm(t('delete') + "?")) return;
     deleteMut.mutate({ id }, {
       onSuccess: () => { invalidate(); showToast(t('deleted_successfully')); },
       onError: () => showToast(t('error_generic'), false),
