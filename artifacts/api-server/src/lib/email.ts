@@ -1,23 +1,30 @@
 import nodemailer from "nodemailer";
 import { Resend } from "resend";
+import dns from "dns";
 
 const smtpPort = parseInt(process.env["SMTP_PORT"] || "587");
 const smtpSecure = smtpPort === 465;
 
-const transporter = nodemailer.createTransport({
-  host: process.env["SMTP_HOST"] || "smtp.gmail.com",
-  port: smtpPort,
-  secure: smtpSecure,
-  requireTLS: !smtpSecure,
-  auth: {
-    user: process.env["SMTP_USER"],
-    pass: process.env["SMTP_PASS"],
-  },
-  tls: {
-    rejectUnauthorized: false,
-  },
-  family: 4,
-} as any);
+function createTransporter() {
+  return nodemailer.createTransport({
+    host: process.env["SMTP_HOST"] || "smtp.gmail.com",
+    port: smtpPort,
+    secure: smtpSecure,
+    requireTLS: !smtpSecure,
+    auth: {
+      user: process.env["SMTP_USER"],
+      pass: process.env["SMTP_PASS"],
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+    dnsLookup: (address: string, options: any, callback: any) => {
+      dns.lookup(address, { ...options, family: 4 }, callback);
+    },
+  } as any);
+}
+
+const transporter = createTransporter();
 
 const resend = process.env["RESEND_API_KEY"] ? new Resend(process.env["RESEND_API_KEY"]) : null;
 

@@ -31,6 +31,7 @@ router.get("/healthz/email", async (_req, res) => {
 
   try {
     const nodemailer = await import("nodemailer");
+    const dns = await import("dns");
     const smtpPort = parseInt(process.env["SMTP_PORT"] || "587");
     const smtpSecure = smtpPort === 465;
     const transporter = nodemailer.default.createTransport({
@@ -40,7 +41,9 @@ router.get("/healthz/email", async (_req, res) => {
       requireTLS: !smtpSecure,
       auth: { user: smtpUser, pass: smtpPass },
       tls: { rejectUnauthorized: false },
-      family: 4,
+      dnsLookup: (address: string, options: any, callback: any) => {
+        dns.default.lookup(address, { ...options, family: 4 }, callback);
+      },
     } as any);
 
     await transporter.verify();
