@@ -4,6 +4,7 @@ import { ArrowRight, Leaf, ShieldCheck, Sprout, Tag } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { useGetProducts, useGetCategories } from "@workspace/api-client-react";
 import { ProductCard } from "@/components/ui/ProductCard";
+import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
 const HERO_SLIDES = [
@@ -210,6 +211,3 @@ export default function Home() {
   );
 }
 
-function cn(...classes: (string | undefined | null | false)[]) {
-  return classes.filter(Boolean).join(" ");
-}
