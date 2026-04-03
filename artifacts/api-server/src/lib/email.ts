@@ -2,10 +2,9 @@ import nodemailer from "nodemailer";
 import { Resend } from "resend";
 import dns from "dns";
 
-const smtpPort = parseInt(process.env["SMTP_PORT"] || "587");
-const smtpSecure = smtpPort === 465;
-
 function createTransporter() {
+  const smtpPort = parseInt(process.env["SMTP_PORT"] || "587");
+  const smtpSecure = smtpPort === 465;
   return nodemailer.createTransport({
     host: process.env["SMTP_HOST"] || "smtp.gmail.com",
     port: smtpPort,
@@ -24,23 +23,36 @@ function createTransporter() {
   } as any);
 }
 
-const transporter = createTransporter();
-
-const resend = process.env["RESEND_API_KEY"] ? new Resend(process.env["RESEND_API_KEY"]) : null;
+function getFromAddress(): string {
+  const fromName = process.env["SMTP_FROM_NAME"] || "بذور Seeds Store";
+  const fromEmail =
+    process.env["SMTP_FROM_EMAIL"] ||
+    process.env["SMTP_USER"] ||
+    "noreply@seedsstore.online";
+  return `"${fromName}" <${fromEmail}>`;
+}
 
 async function sendEmail({ from, to, subject, html }: { from: string; to: string; subject: string; html: string }) {
-  if (resend) {
+  const resendKey = process.env["RESEND_API_KEY"];
+
+  if (resendKey) {
+    const resend = new Resend(resendKey);
     try {
       const result = await resend.emails.send({ from, to, subject, html });
       if (result.error) {
         console.warn("[Email] Resend returned an error, falling back to SMTP:", result.error);
+        const transporter = createTransporter();
         await transporter.sendMail({ from, to, subject, html });
+      } else {
+        return;
       }
     } catch (resendErr) {
       console.warn("[Email] Resend failed, falling back to SMTP:", resendErr);
+      const transporter = createTransporter();
       await transporter.sendMail({ from, to, subject, html });
     }
   } else {
+    const transporter = createTransporter();
     await transporter.sendMail({ from, to, subject, html });
   }
 }
@@ -77,10 +89,9 @@ function buildOrderConfirmationHtml(data: OrderEmailData): string {
   const formatPrice = (amount: number) =>
     `${amount.toFixed(3)} د.أ`;
 
-  const replitDomain = process.env["REPLIT_DEV_DOMAIN"];
   const storeUrl = (
     process.env["STORE_URL"] ||
-    (replitDomain ? `https://${replitDomain}` : "")
+    (process.env["REPLIT_DEV_DOMAIN"] ? `https://${process.env["REPLIT_DEV_DOMAIN"]}` : "")
   ).replace(/\/$/, "");
 
   const resolveImageUrl = (url?: string): string | undefined => {
@@ -121,6 +132,8 @@ function buildOrderConfirmationHtml(data: OrderEmailData): string {
     cash_on_delivery: "الدفع عند الاستلام",
     stripe: "بطاقة ائتمانية",
   };
+
+  const contactEmail = process.env["SMTP_USER"] || "seedsstorebazour@gmail.com";
 
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -220,7 +233,7 @@ function buildOrderConfirmationHtml(data: OrderEmailData): string {
     <!-- Footer -->
     <div style="background:#f8f8f8;border-top:1px solid #e5e5e5;padding:24px 32px;text-align:center;">
       <p style="margin:0 0 8px;color:#555;font-size:14px;">إذا كان لديك أي استفسار، لا تتردد في التواصل معنا</p>
-      <p style="margin:0;color:#2d6a4f;font-size:14px;font-weight:600;">seedsstorebazour@gmail.com</p>
+      <p style="margin:0;color:#2d6a4f;font-size:14px;font-weight:600;">${contactEmail}</p>
       <p style="margin:16px 0 0;color:#aaa;font-size:12px;">© ${new Date().getFullYear()} بذور Seeds Store. جميع الحقوق محفوظة.</p>
     </div>
   </div>
@@ -239,10 +252,9 @@ export interface OrderCancelledEmailData {
 function buildOrderCancelledHtml(data: OrderCancelledEmailData): string {
   const { customerName, orderNumber, items } = data;
 
-  const replitDomain = process.env["REPLIT_DEV_DOMAIN"];
   const storeUrl = (
     process.env["STORE_URL"] ||
-    (replitDomain ? `https://${replitDomain}` : "")
+    (process.env["REPLIT_DEV_DOMAIN"] ? `https://${process.env["REPLIT_DEV_DOMAIN"]}` : "")
   ).replace(/\/$/, "");
 
   const resolveImageUrl = (url?: string): string | undefined => {
@@ -276,6 +288,8 @@ function buildOrderCancelledHtml(data: OrderCancelledEmailData): string {
       </tr>`
     )
     .join("");
+
+  const contactEmail = process.env["SMTP_USER"] || "seedsstorebazour@gmail.com";
 
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -335,7 +349,7 @@ function buildOrderCancelledHtml(data: OrderCancelledEmailData): string {
     <!-- CTA -->
     <div style="padding:0 32px 32px;text-align:center;">
       <p style="color:#555;font-size:14px;margin-bottom:16px;">هل لديك استفسار؟ تواصل معنا وسنكون سعداء بمساعدتك</p>
-      <a href="mailto:${process.env["SMTP_USER"] || "seedsstorebazour@gmail.com"}"
+      <a href="mailto:${contactEmail}"
          style="display:inline-block;background:#2d6a4f;color:#ffffff;padding:12px 28px;border-radius:25px;text-decoration:none;font-size:15px;font-weight:600;">
         تواصل معنا
       </a>
@@ -343,7 +357,7 @@ function buildOrderCancelledHtml(data: OrderCancelledEmailData): string {
 
     <!-- Footer -->
     <div style="background:#f8f8f8;border-top:1px solid #e5e5e5;padding:20px 32px;text-align:center;">
-      <p style="margin:0;color:#2d6a4f;font-size:14px;font-weight:600;">${process.env["SMTP_USER"] || "seedsstorebazour@gmail.com"}</p>
+      <p style="margin:0;color:#2d6a4f;font-size:14px;font-weight:600;">${contactEmail}</p>
       <p style="margin:10px 0 0;color:#aaa;font-size:12px;">© ${new Date().getFullYear()} بذور Seeds Store. جميع الحقوق محفوظة.</p>
     </div>
   </div>
@@ -358,10 +372,9 @@ export async function sendOrderCancelledEmail(data: OrderCancelledEmailData): Pr
   if (!hasResend && !hasSmtp) return false;
 
   try {
-    const fromName = process.env["SMTP_FROM_NAME"] || "بذور Seeds Store";
-    const fromEmail = process.env["SMTP_USER"] || "noreply@seedsstore.online";
+    const from = getFromAddress();
     await sendEmail({
-      from: `"${fromName}" <${fromEmail}>`,
+      from,
       to: data.customerEmail,
       subject: `❌ إلغاء طلبك #${data.orderNumber} - بذور Seeds Store`,
       html: buildOrderCancelledHtml(data),
@@ -472,10 +485,9 @@ export async function sendAdminNewOrderEmail(data: OrderEmailData): Promise<bool
   }
 
   try {
-    const fromName = process.env["SMTP_FROM_NAME"] || "بذور Seeds Store";
-    const fromEmail = process.env["SMTP_USER"] || "noreply@seedsstore.online";
+    const from = getFromAddress();
     await sendEmail({
-      from: `${fromName} <${fromEmail}>`,
+      from,
       to: adminEmail,
       subject: `🛒 طلب جديد #${data.orderNumber} من ${data.customerName} — بذور`,
       html: buildAdminNewOrderHtml(data),
@@ -501,10 +513,9 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData): Promise<
   }
 
   try {
-    const fromName = process.env["SMTP_FROM_NAME"] || "بذور Seeds Store";
-    const fromEmail = process.env["SMTP_USER"] || "noreply@seedsstore.online";
+    const from = getFromAddress();
     await sendEmail({
-      from: `${fromName} <${fromEmail}>`,
+      from,
       to: data.customerEmail,
       subject: `✅ تأكيد طلبك #${data.orderNumber} - بذور Seeds Store`,
       html: buildOrderConfirmationHtml(data),
