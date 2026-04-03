@@ -6,6 +6,7 @@ import { formatPrice } from "@/lib/utils";
 import { useCartStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, ShoppingBag, Star, CheckCircle2, ShieldCheck, Truck, Send, User } from "lucide-react";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 
 interface Review {
@@ -63,6 +64,7 @@ export default function ProductDetail() {
   const token = typeof window !== "undefined" ? localStorage.getItem("bazour_token") : null;
 
   const { data: product, isLoading, error } = useGetProduct(id || "");
+  const getItemQuantity = useCartStore(s => s.getItemQuantity);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
 
@@ -188,24 +190,73 @@ export default function ProductDetail() {
           </p>
 
           <div className="space-y-6">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center bg-card border-2 border-border rounded-2xl h-14 p-1 w-36">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-full flex items-center justify-center rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-                  <Minus className="w-4 h-4" />
-                </button>
-                <span className="flex-1 text-center font-bold text-lg">{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-full flex items-center justify-center rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-              <Button
-                onClick={() => addItem(product, quantity)}
-                className="flex-1 h-14 text-lg rounded-2xl shadow-lg shadow-primary/25 hover:-translate-y-1 transition-all"
-              >
-                <ShoppingBag className="w-5 h-5 ms-2" />
-                {t("add_to_cart")}
-              </Button>
-            </div>
+            {(() => {
+              const maxQty = typeof product.quantity === 'number' ? product.quantity : Infinity;
+              const isOutOfStock = maxQty === 0;
+              const cartQty = getItemQuantity(product.id);
+              const atMax = cartQty >= maxQty && maxQty !== Infinity;
+
+              const handleAddToCart = () => {
+                if (isOutOfStock || atMax) {
+                  toast.error(
+                    isAr
+                      ? (isOutOfStock ? 'عذراً، هذا المنتج غير متوفر حالياً' : `الكمية المتاحة ${maxQty} فقط — لقد وصلت للحد الأقصى`)
+                      : (isOutOfStock ? 'Sorry, this product is out of stock' : `Only ${maxQty} available — maximum reached`),
+                    { duration: 3000 }
+                  );
+                  return;
+                }
+                addItem(product, quantity);
+                toast.success(isAr ? 'تمت الإضافة إلى السلة' : 'Added to cart', { duration: 2000 });
+              };
+
+              return (
+                <>
+                  {isOutOfStock ? (
+                    <div className="flex items-center gap-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-2xl px-5 py-4">
+                      <span className="text-2xl">😔</span>
+                      <div>
+                        <p className="font-bold text-red-700 dark:text-red-400">{isAr ? 'نفذت الكمية' : 'Out of Stock'}</p>
+                        <p className="text-sm text-red-600/80 dark:text-red-500">{isAr ? 'هذا المنتج غير متوفر حالياً' : 'This product is currently unavailable'}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center bg-card border-2 border-border rounded-2xl h-14 p-1 w-36">
+                        <button
+                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                          className="w-10 h-full flex items-center justify-center rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="flex-1 text-center font-bold text-lg">{quantity}</span>
+                        <button
+                          onClick={() => setQuantity(Math.min(quantity + 1, maxQty === Infinity ? quantity + 1 : maxQty))}
+                          disabled={quantity >= maxQty}
+                          className="w-10 h-full flex items-center justify-center rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <Button
+                        onClick={handleAddToCart}
+                        disabled={isOutOfStock}
+                        className="flex-1 h-14 text-lg rounded-2xl shadow-lg shadow-primary/25 hover:-translate-y-1 transition-all"
+                      >
+                        <ShoppingBag className="w-5 h-5 ms-2" />
+                        {t("add_to_cart")}
+                      </Button>
+                    </div>
+                  )}
+                  {!isOutOfStock && maxQty !== Infinity && (
+                    <p className="text-sm text-muted-foreground">
+                      {isAr ? `المتاح: ${maxQty} قطعة` : `Available: ${maxQty} units`}
+                      {cartQty > 0 && ` — ${isAr ? `في سلتك: ${cartQty}` : `in cart: ${cartQty}`}`}
+                    </p>
+                  )}
+                </>
+              );
+            })()}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 pt-8 border-t border-border">
               <div className="flex items-center gap-3 text-muted-foreground">

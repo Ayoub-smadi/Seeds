@@ -105,9 +105,10 @@ export function CartDrawer() {
                               <Minus className="w-3 h-3" />
                             </button>
                             <span className="text-sm font-medium w-4 text-center">{item.quantity}</span>
-                            <button 
-                              className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-background shadow-sm transition-colors"
+                            <button
+                              className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-background shadow-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                               onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                              disabled={typeof item.product.quantity === 'number' && item.quantity >= item.product.quantity}
                             >
                               <Plus className="w-3 h-3" />
                             </button>
