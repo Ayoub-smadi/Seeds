@@ -1,10 +1,14 @@
 import nodemailer from "nodemailer";
 import { Resend } from "resend";
 
+const smtpPort = parseInt(process.env["SMTP_PORT"] || "587");
+const smtpSecure = smtpPort === 465;
+
 const transporter = nodemailer.createTransport({
   host: process.env["SMTP_HOST"] || "smtp.gmail.com",
-  port: parseInt(process.env["SMTP_PORT"] || "465"),
-  secure: parseInt(process.env["SMTP_PORT"] || "465") === 465,
+  port: smtpPort,
+  secure: smtpSecure,
+  requireTLS: !smtpSecure,
   auth: {
     user: process.env["SMTP_USER"],
     pass: process.env["SMTP_PASS"],
@@ -19,7 +23,16 @@ const resend = process.env["RESEND_API_KEY"] ? new Resend(process.env["RESEND_AP
 
 async function sendEmail({ from, to, subject, html }: { from: string; to: string; subject: string; html: string }) {
   if (resend) {
-    await resend.emails.send({ from, to, subject, html });
+    try {
+      const result = await resend.emails.send({ from, to, subject, html });
+      if (result.error) {
+        console.warn("[Email] Resend returned an error, falling back to SMTP:", result.error);
+        await transporter.sendMail({ from, to, subject, html });
+      }
+    } catch (resendErr) {
+      console.warn("[Email] Resend failed, falling back to SMTP:", resendErr);
+      await transporter.sendMail({ from, to, subject, html });
+    }
   } else {
     await transporter.sendMail({ from, to, subject, html });
   }
@@ -333,18 +346,20 @@ function buildOrderCancelledHtml(data: OrderCancelledEmailData): string {
 }
 
 export async function sendOrderCancelledEmail(data: OrderCancelledEmailData): Promise<boolean> {
-  if (!process.env["SMTP_USER"] || !process.env["SMTP_PASS"]) {
-    return false;
-  }
+  const hasResend = !!process.env["RESEND_API_KEY"];
+  const hasSmtp = !!(process.env["SMTP_USER"] && process.env["SMTP_PASS"]);
+  if (!hasResend && !hasSmtp) return false;
 
   try {
     const fromName = process.env["SMTP_FROM_NAME"] || "بذور Seeds Store";
-    await transporter.sendMail({
-      from: `"${fromName}" <${process.env["SMTP_USER"]}>`,
+    const fromEmail = process.env["SMTP_USER"] || "noreply@seedsstore.online";
+    await sendEmail({
+      from: `"${fromName}" <${fromEmail}>`,
       to: data.customerEmail,
       subject: `❌ إلغاء طلبك #${data.orderNumber} - بذور Seeds Store`,
       html: buildOrderCancelledHtml(data),
     });
+    console.log(`[Email] Order cancelled email sent to ${data.customerEmail} for order ${data.orderNumber}`);
     return true;
   } catch (err) {
     console.error("[Email] Failed to send order cancelled email:", err);
@@ -444,7 +459,10 @@ export async function sendAdminNewOrderEmail(data: OrderEmailData): Promise<bool
   const adminEmail = process.env["ADMIN_NOTIFICATION_EMAIL"] || process.env["ADMIN_EMAIL"] || process.env["SMTP_USER"];
   const hasResend = !!process.env["RESEND_API_KEY"];
   const hasSmtp = !!(process.env["SMTP_USER"] && process.env["SMTP_PASS"]);
-  if ((!hasResend && !hasSmtp) || !adminEmail) return false;
+  if ((!hasResend && !hasSmtp) || !adminEmail) {
+    console.warn("[Email] Admin order email skipped: no email provider configured or no admin email set");
+    return false;
+  }
 
   try {
     const fromName = process.env["SMTP_FROM_NAME"] || "بذور Seeds Store";
@@ -455,6 +473,7 @@ export async function sendAdminNewOrderEmail(data: OrderEmailData): Promise<bool
       subject: `🛒 طلب جديد #${data.orderNumber} من ${data.customerName} — بذور`,
       html: buildAdminNewOrderHtml(data),
     });
+    console.log(`[Email] Admin new order email sent to ${adminEmail} for order ${data.orderNumber}`);
     return true;
   } catch (err) {
     console.error("[Email] Failed to send admin new order email:", err);
@@ -465,8 +484,14 @@ export async function sendAdminNewOrderEmail(data: OrderEmailData): Promise<bool
 export async function sendOrderConfirmationEmail(data: OrderEmailData): Promise<boolean> {
   const hasResend = !!process.env["RESEND_API_KEY"];
   const hasSmtp = !!(process.env["SMTP_USER"] && process.env["SMTP_PASS"]);
-  if (!hasResend && !hasSmtp) return false;
-  if (!data.customerEmail) return false;
+  if (!hasResend && !hasSmtp) {
+    console.warn("[Email] Order confirmation skipped: no email provider configured");
+    return false;
+  }
+  if (!data.customerEmail) {
+    console.warn("[Email] Order confirmation skipped: no customer email for order", data.orderNumber);
+    return false;
+  }
 
   try {
     const fromName = process.env["SMTP_FROM_NAME"] || "بذور Seeds Store";
@@ -477,6 +502,7 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData): Promise<
       subject: `✅ تأكيد طلبك #${data.orderNumber} - بذور Seeds Store`,
       html: buildOrderConfirmationHtml(data),
     });
+    console.log(`[Email] Order confirmation sent to ${data.customerEmail} for order ${data.orderNumber}`);
     return true;
   } catch (err) {
     console.error("[Email] Failed to send order confirmation:", err);
