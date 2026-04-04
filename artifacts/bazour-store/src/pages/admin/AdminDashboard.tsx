@@ -148,7 +148,7 @@ export default function AdminDashboard() {
     },
     {
       label: t('total_users'),
-      value: usersData?.length ?? 0,
+      value: usersData?.total ?? 0,
       icon: Users,
       color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
       href: "/admin/users",
