@@ -16,6 +16,12 @@ export const settingsTable = pgTable("settings", {
   socialWhatsapp: text("social_whatsapp"),
   currency: text("currency").default("JOD"),
   currencySymbol: text("currency_symbol").default("د.أ"),
+  smtpHost: text("smtp_host"),
+  smtpPort: text("smtp_port"),
+  smtpUser: text("smtp_user"),
+  smtpPass: text("smtp_pass"),
+  smtpFromName: text("smtp_from_name"),
+  smtpFromEmail: text("smtp_from_email"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 

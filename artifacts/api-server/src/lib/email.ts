@@ -1,35 +1,78 @@
 import nodemailer from "nodemailer";
 import { Resend } from "resend";
 import dns from "dns";
+import { db } from "@workspace/db";
+import { settingsTable } from "@workspace/db/schema";
 
-function createTransporter() {
-  const smtpPort = parseInt(process.env["SMTP_PORT"] || "587");
-  const smtpSecure = smtpPort === 465;
+interface SmtpConfig {
+  host: string;
+  port: number;
+  user: string;
+  pass: string;
+  fromName: string;
+  fromEmail: string;
+}
+
+let smtpConfigCache: SmtpConfig | null = null;
+let smtpConfigCachedAt = 0;
+const SMTP_CACHE_TTL_MS = 5 * 60 * 1000;
+
+async function getSmtpConfig(): Promise<SmtpConfig> {
+  const now = Date.now();
+  if (smtpConfigCache && now - smtpConfigCachedAt < SMTP_CACHE_TTL_MS) {
+    return smtpConfigCache;
+  }
+
+  try {
+    const rows = await db.select().from(settingsTable).limit(1);
+    const s = rows[0];
+    const config: SmtpConfig = {
+      host: s?.smtpHost || process.env["SMTP_HOST"] || "smtp.gmail.com",
+      port: parseInt(s?.smtpPort || process.env["SMTP_PORT"] || "587"),
+      user: s?.smtpUser || process.env["SMTP_USER"] || "",
+      pass: s?.smtpPass || process.env["SMTP_PASS"] || "",
+      fromName: s?.smtpFromName || process.env["SMTP_FROM_NAME"] || "بذور Seeds Store",
+      fromEmail: s?.smtpFromEmail || process.env["SMTP_FROM_EMAIL"] || s?.smtpUser || process.env["SMTP_USER"] || "noreply@seedsstore.online",
+    };
+    smtpConfigCache = config;
+    smtpConfigCachedAt = now;
+    return config;
+  } catch {
+    return {
+      host: process.env["SMTP_HOST"] || "smtp.gmail.com",
+      port: parseInt(process.env["SMTP_PORT"] || "587"),
+      user: process.env["SMTP_USER"] || "",
+      pass: process.env["SMTP_PASS"] || "",
+      fromName: process.env["SMTP_FROM_NAME"] || "بذور Seeds Store",
+      fromEmail: process.env["SMTP_FROM_EMAIL"] || process.env["SMTP_USER"] || "noreply@seedsstore.online",
+    };
+  }
+}
+
+export function invalidateSmtpCache() {
+  smtpConfigCache = null;
+  smtpConfigCachedAt = 0;
+}
+
+async function createTransporter() {
+  const cfg = await getSmtpConfig();
+  const smtpSecure = cfg.port === 465;
   return nodemailer.createTransport({
-    host: process.env["SMTP_HOST"] || "smtp.gmail.com",
-    port: smtpPort,
+    host: cfg.host,
+    port: cfg.port,
     secure: smtpSecure,
     requireTLS: !smtpSecure,
-    auth: {
-      user: process.env["SMTP_USER"],
-      pass: process.env["SMTP_PASS"],
-    },
-    tls: {
-      rejectUnauthorized: false,
-    },
+    auth: { user: cfg.user, pass: cfg.pass },
+    tls: { rejectUnauthorized: false },
     dnsLookup: (address: string, options: any, callback: any) => {
       dns.lookup(address, { ...options, family: 4 }, callback);
     },
   } as any);
 }
 
-function getFromAddress(): string {
-  const fromName = process.env["SMTP_FROM_NAME"] || "بذور Seeds Store";
-  const fromEmail =
-    process.env["SMTP_FROM_EMAIL"] ||
-    process.env["SMTP_USER"] ||
-    "noreply@seedsstore.online";
-  return `"${fromName}" <${fromEmail}>`;
+async function getFromAddress(): Promise<string> {
+  const cfg = await getSmtpConfig();
+  return `"${cfg.fromName}" <${cfg.fromEmail}>`;
 }
 
 async function sendEmail({ from, to, subject, html }: { from: string; to: string; subject: string; html: string }) {
@@ -41,18 +84,18 @@ async function sendEmail({ from, to, subject, html }: { from: string; to: string
       const result = await resend.emails.send({ from, to, subject, html });
       if (result.error) {
         console.warn("[Email] Resend returned an error, falling back to SMTP:", result.error);
-        const transporter = createTransporter();
+        const transporter = await createTransporter();
         await transporter.sendMail({ from, to, subject, html });
       } else {
         return;
       }
     } catch (resendErr) {
       console.warn("[Email] Resend failed, falling back to SMTP:", resendErr);
-      const transporter = createTransporter();
+      const transporter = await createTransporter();
       await transporter.sendMail({ from, to, subject, html });
     }
   } else {
-    const transporter = createTransporter();
+    const transporter = await createTransporter();
     await transporter.sendMail({ from, to, subject, html });
   }
 }
@@ -367,12 +410,13 @@ function buildOrderCancelledHtml(data: OrderCancelledEmailData): string {
 }
 
 export async function sendOrderCancelledEmail(data: OrderCancelledEmailData): Promise<boolean> {
+  const cfg = await getSmtpConfig();
   const hasResend = !!process.env["RESEND_API_KEY"];
-  const hasSmtp = !!(process.env["SMTP_USER"] && process.env["SMTP_PASS"]);
+  const hasSmtp = !!(cfg.user && cfg.pass);
   if (!hasResend && !hasSmtp) return false;
 
   try {
-    const from = getFromAddress();
+    const from = await getFromAddress();
     await sendEmail({
       from,
       to: data.customerEmail,
@@ -476,16 +520,17 @@ function buildAdminNewOrderHtml(data: OrderEmailData): string {
 }
 
 export async function sendAdminNewOrderEmail(data: OrderEmailData): Promise<boolean> {
-  const adminEmail = process.env["ADMIN_NOTIFICATION_EMAIL"] || process.env["ADMIN_EMAIL"] || process.env["SMTP_USER"];
+  const cfg = await getSmtpConfig();
   const hasResend = !!process.env["RESEND_API_KEY"];
-  const hasSmtp = !!(process.env["SMTP_USER"] && process.env["SMTP_PASS"]);
+  const hasSmtp = !!(cfg.user && cfg.pass);
+  const adminEmail = process.env["ADMIN_NOTIFICATION_EMAIL"] || process.env["ADMIN_EMAIL"] || cfg.user;
   if ((!hasResend && !hasSmtp) || !adminEmail) {
     console.warn("[Email] Admin order email skipped: no email provider configured or no admin email set");
     return false;
   }
 
   try {
-    const from = getFromAddress();
+    const from = await getFromAddress();
     await sendEmail({
       from,
       to: adminEmail,
@@ -501,8 +546,9 @@ export async function sendAdminNewOrderEmail(data: OrderEmailData): Promise<bool
 }
 
 export async function sendOrderConfirmationEmail(data: OrderEmailData): Promise<boolean> {
+  const cfg = await getSmtpConfig();
   const hasResend = !!process.env["RESEND_API_KEY"];
-  const hasSmtp = !!(process.env["SMTP_USER"] && process.env["SMTP_PASS"]);
+  const hasSmtp = !!(cfg.user && cfg.pass);
   if (!hasResend && !hasSmtp) {
     console.warn("[Email] Order confirmation skipped: no email provider configured");
     return false;
@@ -513,7 +559,7 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData): Promise<
   }
 
   try {
-    const from = getFromAddress();
+    const from = await getFromAddress();
     await sendEmail({
       from,
       to: data.customerEmail,
