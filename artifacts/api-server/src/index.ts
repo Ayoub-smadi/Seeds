@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { seedAdmin } from "./lib/seed";
 import { runMigrations } from "@workspace/db";
+import { migrateLocalImagesToGCS } from "./lib/migrateImages";
 
 const rawPort = process.env["PORT"];
 
@@ -25,6 +26,7 @@ async function start() {
   });
 
   await seedAdmin().catch(err => logger.warn({ err }, "Admin seed failed (non-fatal)"));
+  await migrateLocalImagesToGCS().catch(err => logger.warn({ err }, "Image migration failed (non-fatal)"));
 
   app.listen(port, (err) => {
     if (err) {
