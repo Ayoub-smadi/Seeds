@@ -69,14 +69,18 @@ interface Category {
 
 function CategoriesCarousel({ categories, lang }: { categories: Category[]; lang: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [canScrollLeft, setCanScrollLeft] = useState(true);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   const checkScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 8);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 8);
+    // In RTL, scrollLeft is 0 at start (right side) and goes negative.
+    // Normalize with Math.abs so the logic works for both LTR and RTL.
+    const sl = Math.abs(el.scrollLeft);
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    setCanScrollLeft(sl < maxScroll - 8);
+    setCanScrollRight(sl > 8);
   };
 
   useEffect(() => {
@@ -94,6 +98,9 @@ function CategoriesCarousel({ categories, lang }: { categories: Category[]; lang
     const el = scrollRef.current;
     if (!el) return;
     const amount = el.clientWidth * 0.75;
+    // In RTL: scrollLeft is 0 at right-start, negative going left.
+    // scrollBy with negative left = goes further left (more items) ✓
+    // scrollBy with positive left = goes right (back to start) ✓
     el.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
   };
 
