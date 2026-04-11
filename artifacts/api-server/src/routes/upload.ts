@@ -2,8 +2,10 @@ import { Router } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { randomUUID } from "crypto";
 import { requireAdmin, requireAuth } from "../lib/auth";
 import { uploadToCloudinary } from "../lib/cloudinary";
+import { objectStorageClient } from "../lib/objectStorage";
 import { db } from "@workspace/db";
 import { productsTable, categoriesTable } from "@workspace/db/schema";
 import { ilike } from "drizzle-orm";
@@ -31,18 +33,66 @@ function runUploadMiddleware(
   });
 }
 
+function parseObjectPath(gcsPath: string): { bucketName: string; objectName: string } {
+  const cleanPath = gcsPath.startsWith("/") ? gcsPath.slice(1) : gcsPath;
+  const parts = cleanPath.split("/");
+  return { bucketName: parts[0]!, objectName: parts.slice(1).join("/") };
+}
+
 async function saveImageBuffer(buffer: Buffer, originalname: string): Promise<string> {
   const cloudinaryConfigured = process.env["CLOUDINARY_CLOUD_NAME"] && process.env["CLOUDINARY_API_KEY"];
   if (cloudinaryConfigured) {
     const { url } = await uploadToCloudinary(buffer);
     return url;
   }
+
+  const privateObjectDir = process.env["PRIVATE_OBJECT_DIR"];
+  if (privateObjectDir) {
+    const ext = path.extname(originalname) || ".jpg";
+    const objectId = `${randomUUID()}${ext}`;
+    const fullPath = `${privateObjectDir}/uploads/${objectId}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+    const contentType = ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : ext === ".gif" ? "image/gif" : "image/jpeg";
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+    await file.save(buffer, { contentType, resumable: false });
+    return `/api/upload/objects/uploads/${objectId}`;
+  }
+
   const ext = path.extname(originalname) || ".jpg";
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
   const filepath = path.join(UPLOADS_DIR, filename);
   fs.writeFileSync(filepath, buffer);
   return `/api/uploads/${filename}`;
 }
+
+router.get("/objects/{*objectPath}", async (req, res) => {
+  try {
+    const privateObjectDir = process.env["PRIVATE_OBJECT_DIR"];
+    if (!privateObjectDir) {
+      res.status(503).json({ error: "Object storage not configured" });
+      return;
+    }
+    const objectPath = (req.params as Record<string, string>)["objectPath"] || "";
+    const fullPath = `${privateObjectDir}/${objectPath}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+    const [exists] = await file.exists();
+    if (!exists) {
+      res.status(404).json({ error: "Not Found" });
+      return;
+    }
+    const [metadata] = await file.getMetadata();
+    const contentType = (metadata.contentType as string) || "application/octet-stream";
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    file.createReadStream().pipe(res);
+  } catch (err) {
+    req.log.error({ err }, "Serve object error");
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 router.post("/avatar", requireAuth, async (req, res) => {
   try {

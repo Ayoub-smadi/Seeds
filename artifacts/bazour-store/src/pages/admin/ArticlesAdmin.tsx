@@ -93,12 +93,22 @@ export default function ArticlesAdmin() {
       const url = editing ? `${BASE}/api/articles/${editing.id}` : `${BASE}/api/articles`;
       const method = editing ? "PUT" : "POST";
       const res = await fetch(url, { method, headers: authHeader(), body: JSON.stringify(form) });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        let message = isAr ? "حدث خطأ" : "Something went wrong";
+        try {
+          const body = await res.json();
+          if (res.status === 409) message = isAr ? "الرابط المختصر (slug) مستخدم مسبقاً، غيّره وحاول مجدداً" : "Slug already exists, please use a different one";
+          else if (res.status === 401 || res.status === 403) message = isAr ? "غير مصرح لك بهذه العملية" : "Not authorized";
+          else if (body?.message) message = body.message;
+        } catch {}
+        showToast(message, false);
+        return;
+      }
       showToast(editing ? (isAr ? "تم التحديث" : "Updated") : (isAr ? "تم الإنشاء" : "Created"));
       setShowForm(false);
       load();
     } catch {
-      showToast(isAr ? "حدث خطأ" : "Something went wrong", false);
+      showToast(isAr ? "تعذّر الاتصال بالخادم" : "Could not connect to server", false);
     } finally {
       setSaving(false);
     }

@@ -2,11 +2,11 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { articlesTable } from "@workspace/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { requireAdmin } from "../lib/auth";
+import { requireAdmin, optionalAuth } from "../lib/auth";
 
 const router = Router();
 
-router.get("/", async (req, res) => {
+router.get("/", optionalAuth, async (req, res) => {
   try {
     const isAdmin = (req as any).user?.role === "admin";
     const all = await db
@@ -22,7 +22,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.get("/:slug", async (req, res) => {
+router.get("/:slug", optionalAuth, async (req, res) => {
   try {
     const [article] = await db
       .select()

@@ -1,11 +1,11 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowRight, Leaf, ShieldCheck, Sprout, Tag } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Leaf, ShieldCheck, Sprout, Tag } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { useGetProducts, useGetCategories } from "@workspace/api-client-react";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const HERO_SLIDES = [
   {
@@ -56,6 +56,123 @@ function HeroCarousel() {
         ))}
       </div>
     </>
+  );
+}
+
+interface Category {
+  id: string;
+  nameAr?: string | null;
+  nameEn?: string | null;
+  imageUrl?: string | null;
+  productCount?: number | null;
+}
+
+function CategoriesCarousel({ categories, lang }: { categories: Category[]; lang: string }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 8);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 8);
+  };
+
+  useEffect(() => {
+    checkScroll();
+    const el = scrollRef.current;
+    el?.addEventListener("scroll", checkScroll, { passive: true });
+    window.addEventListener("resize", checkScroll);
+    return () => {
+      el?.removeEventListener("scroll", checkScroll);
+      window.removeEventListener("resize", checkScroll);
+    };
+  }, [categories]);
+
+  const scroll = (dir: "left" | "right") => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const amount = el.clientWidth * 0.75;
+    el.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
+  };
+
+  return (
+    <section className="py-16 md:py-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center mb-8 md:mb-12">
+          <h2 className="text-3xl md:text-4xl font-display font-bold">
+            {lang === "ar" ? "الأقسام" : "Categories"}
+          </h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => scroll("left")}
+              disabled={!canScrollLeft}
+              className={cn(
+                "w-10 h-10 rounded-full border border-border flex items-center justify-center transition-all",
+                canScrollLeft
+                  ? "bg-card hover:bg-muted text-foreground shadow-sm"
+                  : "opacity-30 cursor-not-allowed bg-muted text-muted-foreground"
+              )}
+              aria-label="Scroll left"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => scroll("right")}
+              disabled={!canScrollRight}
+              className={cn(
+                "w-10 h-10 rounded-full border border-border flex items-center justify-center transition-all",
+                canScrollRight
+                  ? "bg-card hover:bg-muted text-foreground shadow-sm"
+                  : "opacity-30 cursor-not-allowed bg-muted text-muted-foreground"
+              )}
+              aria-label="Scroll right"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div
+          ref={scrollRef}
+          className="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth pb-2"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
+          {categories.map((category, i) => (
+            <Link key={category.id} href={`/products?categoryId=${category.id}`} className="flex-none">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className="group relative w-44 md:w-56 aspect-[4/5] rounded-3xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all"
+              >
+                <img
+                  src={
+                    category.imageUrl ||
+                    (i % 2 === 0
+                      ? `${import.meta.env.BASE_URL}images/category-seeds.png`
+                      : `${import.meta.env.BASE_URL}images/category-plants.png`)
+                  }
+                  alt={lang === "ar" ? (category.nameAr ?? "") : (category.nameEn ?? "")}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 inset-x-0 p-4 md:p-5">
+                  <h3 className="text-white font-bold text-lg md:text-xl leading-tight group-hover:text-primary-foreground transition-colors">
+                    {lang === "ar" ? category.nameAr : category.nameEn}
+                  </h3>
+                  <p className="text-white/70 text-xs mt-1">
+                    {category.productCount || 0} {lang === "ar" ? "منتج" : "Products"}
+                  </p>
+                </div>
+              </motion.div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -121,38 +238,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-end mb-12">
-          <h2 className="text-3xl md:text-4xl font-display font-bold">{t('categories')}</h2>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-          {categories?.slice(0, 4)?.map((category, i) => (
-            <Link key={category.id} href={`/products?categoryId=${category.id}`}>
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="group relative aspect-[4/5] rounded-3xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all"
-              >
-                <img 
-                  src={category.imageUrl || (i%2===0 ? `${import.meta.env.BASE_URL}images/category-seeds.png` : `${import.meta.env.BASE_URL}images/category-plants.png`)} 
-                  alt={lang === 'ar' ? category.nameAr : category.nameEn}
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute bottom-0 inset-x-0 p-6">
-                  <h3 className="text-white font-bold text-2xl group-hover:text-primary-foreground transition-colors">
-                    {lang === 'ar' ? category.nameAr : category.nameEn}
-                  </h3>
-                  <p className="text-white/80 text-sm mt-1">{category.productCount || 0} Products</p>
-                </div>
-              </motion.div>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* Categories Carousel */}
+      {categories && categories.length > 0 && (
+        <CategoriesCarousel categories={categories} lang={lang} />
+      )}
 
       {/* Sale Products */}
       {saleData && saleData.products.length > 0 && (
