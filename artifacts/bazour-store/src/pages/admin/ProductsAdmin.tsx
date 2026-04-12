@@ -547,7 +547,16 @@ export default function ProductsAdmin() {
                   className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:border-primary"
                 >
                   <option value="">{lang === 'ar' ? 'اختر قسم' : 'Select category'}</option>
-                  {categories?.map(c => <option key={c.id} value={c.id}>{lang === 'ar' ? c.nameAr : c.nameEn}</option>)}
+                  {categories?.flatMap(cat => [
+                    <option key={cat.id} value={cat.id}>
+                      {lang === 'ar' ? cat.nameAr : cat.nameEn}
+                    </option>,
+                    ...(cat.subcategories?.map(sub => (
+                      <option key={sub.id} value={sub.id}>
+                        {lang === 'ar' ? `— ${sub.nameAr}` : `— ${sub.nameEn}`}
+                      </option>
+                    )) ?? [])
+                  ])}
                 </select>
               </div>
             </div>

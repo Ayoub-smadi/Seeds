@@ -84,13 +84,16 @@ function CategoriesCarousel({ categories, lang }: { categories: Category[]; lang
   };
 
   useEffect(() => {
-    checkScroll();
+    let frame: number;
+    const run = () => { frame = requestAnimationFrame(checkScroll); };
+    run();
     const el = scrollRef.current;
     el?.addEventListener("scroll", checkScroll, { passive: true });
-    window.addEventListener("resize", checkScroll);
+    window.addEventListener("resize", run);
     return () => {
+      cancelAnimationFrame(frame);
       el?.removeEventListener("scroll", checkScroll);
-      window.removeEventListener("resize", checkScroll);
+      window.removeEventListener("resize", run);
     };
   }, [categories]);
 
