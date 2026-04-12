@@ -71,8 +71,8 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "PORT=21244 pnpm --filter @workspace/bazour-store run dev"
-waitForPort = 21244
+args = "PORT=3000 pnpm --filter @workspace/bazour-store run dev"
+waitForPort = 3000
 
 [agent]
 stack = "PNPM_WORKSPACE"
